@@ -7,8 +7,8 @@ pub fn part_one(input: &str) -> Option<u32> {
     let sum = regex
         .captures_iter(input)
         .map(|captures| {
-            let x = &captures["x"].parse::<u32>().unwrap();
-            let y = &captures["y"].parse::<u32>().unwrap();
+            let x = captures["x"].parse::<u32>().unwrap();
+            let y = captures["y"].parse::<u32>().unwrap();
             x * y
         })
         .sum();
@@ -20,18 +20,16 @@ pub fn part_two(input: &str) -> Option<u32> {
         Regex::new(r"((?P<op>do\(\)|don't\(\))|(mul\((?P<x>\d{1,3}),(?P<y>\d{1,3})\)))").unwrap();
     let (_, sum) = regex
         .captures_iter(input)
-        .fold((true, 0), |(on, sum), captures| {
+        .fold((true, 0), |(enabled, sum), captures| {
             if let Some(op) = captures.name("op") {
-                if op.as_str() == "don't()" {
-                    (false, sum)
-                } else if op.as_str() == "do()" {
-                    (true, sum)
-                } else {
-                    panic!("Unknown op: {}", op.as_str());
+                match op.as_str() {
+                    "don't()" => (false, sum),
+                    "do()" => (true, sum),
+                    _ => panic!("Unknown operation: {}", op.as_str()),
                 }
-            } else if on {
-                let x = &captures["x"].parse::<u32>().unwrap();
-                let y = &captures["y"].parse::<u32>().unwrap();
+            } else if enabled {
+                let x = captures["x"].parse::<u32>().unwrap();
+                let y = captures["y"].parse::<u32>().unwrap();
                 (true, sum + x * y)
             } else {
                 (false, sum)
