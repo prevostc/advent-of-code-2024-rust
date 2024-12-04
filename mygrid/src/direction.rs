@@ -14,6 +14,12 @@ pub const DOWN: Direction = Direction::new(1, 0);
 pub const LEFT: Direction = Direction::new(0, -1);
 pub const RIGHT: Direction = Direction::new(0, 1);
 pub const ORTHOGONAL: [Direction; 4] = [UP, DOWN, LEFT, RIGHT];
+pub const DIAGONALS: [Direction; 4] = [
+    UP.add_direction(&RIGHT),
+    RIGHT.add_direction(&DOWN),
+    DOWN.add_direction(&LEFT),
+    LEFT.add_direction(&UP),
+];
 pub const ALL_AROUND: [Direction; 8] = [
     UP,
     UP.add_direction(&RIGHT),
@@ -152,6 +158,15 @@ impl Add<Direction> for Direction {
             self.vertical + rhs.vertical,
             self.horizontal + rhs.horizontal,
         )
+    }
+}
+
+impl Add<Point> for Direction {
+    type Output = Point;
+
+    #[inline]
+    fn add(self, rhs: Point) -> Self::Output {
+        rhs.apply_direction(self)
     }
 }
 

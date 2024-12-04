@@ -24,9 +24,9 @@ impl<T> Grid<T> {
     }
 
     #[inline]
-    pub fn new_from_str(input: &str, map_char: &dyn Fn(char) -> T) -> Self
+    pub fn new_from_str<F>(input: &str, map_char: F) -> Self
     where
-        T: From<char>,
+        F: Fn(char) -> T,
     {
         let width = input.lines().next().unwrap().len();
         let content = input
@@ -196,6 +196,15 @@ impl<T> Grid<T> {
             .enumerate()
             .map(move |(i, t)| (Point::new_usize(i / self.width, i % self.width), t))
     }
+
+    #[inline]
+    pub fn get_item(&self, point: Point) -> Option<&T> {
+        if self.is_in_bounds(point) {
+            Some(&self.content[((point.line as usize) * self.width) + (point.column as usize)])
+        } else {
+            None
+        }
+    }
 }
 
 impl<T> Index<Point> for Grid<T> {
@@ -232,7 +241,7 @@ impl<T> Grid<T> {
     }
 }
 
-impl std::fmt::Display for Grid<String> {
+impl<T: std::fmt::Display> std::fmt::Display for Grid<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for r in 0..self.height {
             for c in 0..self.width {
