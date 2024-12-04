@@ -7,7 +7,7 @@ use crate::point::Point;
 pub struct Grid<T> {
     pub width: usize,
     pub height: usize,
-    content: Vec<T>,
+    pub(crate) content: Vec<T>,
 }
 
 impl<T> Grid<T> {

@@ -2,6 +2,7 @@ use mygrid::{
     direction::{ALL_AROUND, DOWN, LEFT, RIGHT, UP},
     grid::Grid,
 };
+use rayon::prelude::*;
 
 advent_of_code::solution!(4);
 
@@ -9,8 +10,8 @@ pub fn part_one(input: &str) -> Option<u32> {
     let grid = Grid::new_from_str(input, |c| c);
 
     let res = grid
-        .iter_item_and_position()
-        .flat_map(|(point, &c)| ALL_AROUND.iter().map(move |d| (point, c, *d)))
+        .par_iter_item_and_position()
+        .flat_map_iter(|(point, &c)| ALL_AROUND.iter().map(move |d| (point, c, *d)))
         .filter(|&(_, c, _)| c == 'X')
         .filter(|&(point, _, d)| grid.is_in_bounds(point + (d * 3)))
         .filter(|&(point, _, d)| {

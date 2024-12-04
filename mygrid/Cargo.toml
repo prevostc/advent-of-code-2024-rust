@@ -7,3 +7,6 @@ publish = false
 name = "mygrid"
 test = true
 plugin = false
+
+[dependencies]
+rayon = "1.10.0"

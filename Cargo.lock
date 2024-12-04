@@ -305,6 +305,9 @@ dependencies = [
 [[package]]
 name = "mygrid"
 version = "0.0.1"
+dependencies = [
+ "rayon",
+]
 
 [[package]]
 name = "num-traits"
