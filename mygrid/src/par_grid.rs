@@ -8,9 +8,7 @@ impl<T: Sized + Send + Sync + Clone> Grid<T> {
         self.content.par_iter()
     }
 
-    pub fn par_iter_item_and_position<'a>(
-        &'a self,
-    ) -> impl ParallelIterator<Item = (Point, &T)> + 'a {
+    pub fn par_iter_item_and_position(&self) -> impl ParallelIterator<Item = (Point, &T)> {
         let width = self.width;
         let height = self.height;
         self.content
