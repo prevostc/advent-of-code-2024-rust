@@ -2,6 +2,7 @@ advent_of_code::solution!(6);
 use mygrid::direction::{Direction, UP};
 use mygrid::grid::Grid;
 use mygrid::point::Point;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rustc_hash::FxHashSet;
 
 #[derive(Default, Clone, PartialEq, Eq, Hash)]
@@ -84,18 +85,19 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let (mut grid, start_pos) = parse_grid_and_start_pos(input);
+    let (grid, start_pos) = parse_grid_and_start_pos(input);
     let positions_to_check = get_guard_path_positions_assuming_no_loops(&grid, start_pos);
 
-    let mut count = 0;
-    for pos in positions_to_check {
-        grid[pos] = 'O';
-        if does_start_pos_loop(&grid, start_pos) {
-            count += 1;
-        }
-        grid[pos] = '.';
-    }
-    Some(count)
+    let count = positions_to_check
+        .par_iter()
+        .filter(|&&pos| {
+            let mut grid = grid.clone();
+            grid[pos] = 'O';
+            does_start_pos_loop(&grid, start_pos)
+        })
+        .count();
+
+    Some(count as u32)
 }
 
 #[cfg(test)]
