@@ -3,7 +3,7 @@ use std::ops::{Add, Mul};
 
 use crate::point::Point;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub struct Direction {
     pub vertical: isize,
     pub horizontal: isize,

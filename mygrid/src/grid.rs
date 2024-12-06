@@ -22,7 +22,6 @@ impl<T> Grid<T> {
             content: vec![default; width * height],
         }
     }
-
     #[inline]
     pub fn new_from_str<F>(input: &str, map_char: F) -> Self
     where
@@ -48,7 +47,7 @@ impl<T> Grid<T> {
     pub fn new_from_str_capture_start(
         input: &str,
         map_char: &dyn Fn(char) -> T,
-        is_start: &dyn Fn(T) -> bool,
+        is_start: &dyn Fn(char) -> bool,
     ) -> (Self, Point)
     where
         T: From<char> + Copy,
@@ -59,7 +58,7 @@ impl<T> Grid<T> {
         let mut start = None;
         for (i, c) in input.chars().filter(|&c| c != '\n').enumerate() {
             let t = map_char(c);
-            if is_start(t) {
+            if is_start(c) {
                 start = Some(Point::new_usize(i / width, i % width));
             }
             content.push(t);
@@ -160,6 +159,13 @@ impl<T> Grid<T> {
     }
 }
 
+impl Grid<char> {
+    #[inline]
+    pub fn new_char_grid_from_str(input: &str) -> Self {
+        Self::new_from_str(input, |c| c)
+    }
+}
+
 impl<T> Grid<T> {
     #[inline]
     pub fn is_in_bounds(&self, point: Point) -> bool {
@@ -251,6 +257,22 @@ impl<T: std::fmt::Display> std::fmt::Display for Grid<T> {
             writeln!(f, "")?;
         }
         Ok(())
+    }
+}
+
+impl<T: std::fmt::Display> std::fmt::Debug for Grid<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl<T: PartialEq> Grid<T> {
+    #[inline]
+    pub fn find_position_of(&self, item: &T) -> Option<Point> {
+        self.content
+            .iter()
+            .position(|t| *t == *item)
+            .map(|i| Point::new_usize(i / self.width, i % self.width))
     }
 }
 
@@ -516,5 +538,28 @@ mod tests {
         assert_eq!(grid.content[1], '6');
         assert_eq!(grid.content[2], '8');
         assert_eq!(grid.content[3], '9');
+    }
+
+    #[test]
+    pub fn test_grid_get_item() {
+        let grid = Grid::new_from_str("123\n456\n789", &|c| c);
+        assert_eq!(grid.get_item(Point::new(0, 0)), Some(&'1'));
+        assert_eq!(grid.get_item(Point::new(0, 1)), Some(&'2'));
+        assert_eq!(grid.get_item(Point::new(0, 2)), Some(&'3'));
+    }
+
+    #[test]
+    pub fn test_grid_get_item_out_of_bounds() {
+        let grid = Grid::new_from_str("123\n456\n789", &|c| c);
+        assert_eq!(grid.get_item(Point::new(3, 0)), None);
+        assert_eq!(grid.get_item(Point::new(0, 3)), None);
+    }
+
+    #[test]
+    pub fn test_grid_find_position_of() {
+        let grid = Grid::new_from_str("123\n456\n789", &|c| c);
+        assert_eq!(grid.find_position_of(&'1'), Some(Point::new(0, 0)));
+        assert_eq!(grid.find_position_of(&'2'), Some(Point::new(0, 1)));
+        assert_eq!(grid.find_position_of(&'3'), Some(Point::new(0, 2)));
     }
 }

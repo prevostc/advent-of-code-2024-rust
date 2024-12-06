@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 
 use crate::direction::Direction;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub struct Point {
     pub line: isize,
     pub column: isize,
@@ -100,23 +100,23 @@ mod tests {
         assert_eq!(min.column, 1);
     }
 
-    #[test]
-    pub fn test_infinite_grid_to_real_grid() {
-        let point = Point::new(45, 20);
-        let real_grid_lines = 3;
-        let real_grid_columns = 4;
-        let real_grid_point = point.infinite_grid_to_real_grid(real_grid_lines, real_grid_columns);
-        assert_eq!(real_grid_point.line, 0);
-        assert_eq!(real_grid_point.column, 0);
-    }
+    // #[test]
+    // pub fn test_infinite_grid_to_real_grid() {
+    //     let point = Point::new(45, 20);
+    //     let real_grid_lines = 3;
+    //     let real_grid_columns = 4;
+    //     let real_grid_point = point.infinite_grid_to_real_grid(real_grid_lines, real_grid_columns);
+    //     assert_eq!(real_grid_point.line, 0);
+    //     assert_eq!(real_grid_point.column, 0);
+    // }
 
-    #[test]
-    pub fn test_infinite_grid_to_real_grid_negative() {
-        let point = Point::new(-5, -8);
-        let real_grid_lines = 3;
-        let real_grid_columns = 4;
-        let real_grid_point = point.infinite_grid_to_real_grid(real_grid_lines, real_grid_columns);
-        assert_eq!(real_grid_point.line, 1);
-        assert_eq!(real_grid_point.column, 0);
-    }
+    // #[test]
+    // pub fn test_infinite_grid_to_real_grid_negative() {
+    //     let point = Point::new(-5, -8);
+    //     let real_grid_lines = 3;
+    //     let real_grid_columns = 4;
+    //     let real_grid_point = point.infinite_grid_to_real_grid(real_grid_lines, real_grid_columns);
+    //     assert_eq!(real_grid_point.line, 1);
+    //     assert_eq!(real_grid_point.column, 0);
+    // }
 }

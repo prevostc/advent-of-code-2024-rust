@@ -7,13 +7,13 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests for a solution",
+            "name": "Debug unit tests for solution 06",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     // replace `01` here with the solution you like to debug.
-                    "--bin=01",
+                    "--bin=06",
                     "--package=advent_of_code"
                 ],
             },
