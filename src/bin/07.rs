@@ -1,5 +1,5 @@
+use heapless::Vec as HeaplessVec;
 advent_of_code::solution!(7);
-use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Op {
@@ -8,7 +8,6 @@ enum Op {
     Concat,
 }
 
-type OpVec = Vec<Op>;
 #[derive(Debug)]
 struct EquationData {
     test_value: u64,
@@ -23,80 +22,83 @@ impl EquationData {
         Self { test_value, values }
     }
 
-    fn eval(&self, ops: &OpVec) -> u64 {
-        let mut res = 0;
-        let mut op = Op::Add;
-        for i in 0..self.values.len() {
-            let v = self.values[i];
-            res = match op {
-                Op::Add => res + v,
-                Op::Mul => res * v,
-                Op::Concat => {
-                    let char_count = v.to_string().len() as u32;
-                    res * 10_u64.pow(char_count) + v
+    #[inline]
+    fn has_valid_ops_combination(&self, available_ops: &[Op]) -> bool {
+        let needed_ops = self.values.len() - 1;
+        if needed_ops == 0 {
+            return self.values[0] == self.test_value;
+        }
+
+        const OPS_SIZE: usize = 16;
+        const STACK_SIZE: usize = 32;
+
+        let mut stack = HeaplessVec::<_, STACK_SIZE>::new();
+        stack
+            .push((self.values[0], HeaplessVec::<_, OPS_SIZE>::new()))
+            .unwrap();
+
+        while let Some((current_value, mut ops)) = stack.pop() {
+            if ops.len() == needed_ops {
+                if current_value == self.test_value {
+                    return true;
                 }
-            };
-            if i < ops.len() {
-                op = ops[i];
+                continue;
+            }
+
+            let next_idx = ops.len() + 1;
+            let next_value = self.values[next_idx];
+
+            // Try each available operation
+            for &op in available_ops {
+                let new_value = match op {
+                    Op::Add => current_value + next_value,
+                    Op::Mul => current_value * next_value,
+                    Op::Concat => {
+                        let char_count = next_value.to_string().len() as u32;
+                        current_value * 10_u64.pow(char_count) + next_value
+                    }
+                };
+
+                // Skip if we've already exceeded the target
+                if new_value > self.test_value {
+                    continue;
+                }
+
+                // Create new ops vector and push to stack
+                ops.push(op).unwrap();
+                stack.push((new_value, ops.clone())).unwrap();
+                ops.pop();
             }
         }
-        res
+
+        false
     }
+}
+
+fn solve(input: &str, ops: &[Op]) -> Option<u64> {
+    let sum = input
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(EquationData::parse)
+        .filter(|eq| eq.has_valid_ops_combination(ops))
+        .map(|eq| eq.test_value)
+        .sum();
+    Some(sum)
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
     const ALL_OPS: [Op; 2] = [Op::Add, Op::Mul];
-    let sum = input
-        .lines()
-        .filter(|l| !l.is_empty())
-        .map(|l| EquationData::parse(l))
-        .filter(|eq| {
-            for ops in std::iter::repeat_n(ALL_OPS, eq.values.len() - 1).multi_cartesian_product() {
-                if eq.eval(&ops) == eq.test_value {
-                    return true;
-                }
-            }
-            false
-        })
-        .map(|eq| eq.test_value)
-        .sum();
-    Some(sum)
+    solve(input, &ALL_OPS)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
     const ALL_OPS: [Op; 3] = [Op::Add, Op::Mul, Op::Concat];
-    let sum = input
-        .lines()
-        .filter(|l| !l.is_empty())
-        .map(|l| EquationData::parse(l))
-        .filter(|eq| {
-            for ops in std::iter::repeat_n(ALL_OPS, eq.values.len() - 1).multi_cartesian_product() {
-                if eq.eval(&ops) == eq.test_value {
-                    return true;
-                }
-            }
-            false
-        })
-        .map(|eq| eq.test_value)
-        .sum();
-    Some(sum)
+    solve(input, &ALL_OPS)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_eval() {
-        let eq = EquationData {
-            test_value: 10,
-            values: vec![1, 2, 3],
-        };
-        assert_eq!(eq.eval(&vec![Op::Add, Op::Add]), 6);
-        assert_eq!(eq.eval(&vec![Op::Add, Op::Mul]), 9);
-        assert_eq!(eq.eval(&vec![Op::Mul, Op::Add]), 5);
-        assert_eq!(eq.eval(&vec![Op::Mul, Op::Mul]), 6);
-    }
 
     #[test]
     fn test_part_one() {
