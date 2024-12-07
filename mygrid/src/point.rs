@@ -48,6 +48,29 @@ impl Point {
     pub fn min(&self, other: &Point) -> Self {
         Point::new(self.line.min(other.line), self.column.min(other.column))
     }
+
+    #[inline]
+    pub fn is_aligned(&self, other: &Point) -> bool {
+        self.line == other.line || self.column == other.column
+    }
+
+    #[inline]
+    pub fn is_between_inclusive(&self, a: &Point, b: &Point) -> bool {
+        if !self.is_aligned(a) || !self.is_aligned(b) || !a.is_aligned(b) {
+            return false;
+        }
+
+        let min_line = a.line.min(b.line);
+        let max_line = a.line.max(b.line);
+        let min_column = a.column.min(b.column);
+        let max_column = a.column.max(b.column);
+
+        let is_between_lines = (min_line..=max_line).contains(&self.line);
+        let is_between_columns = (min_column..=max_column).contains(&self.column);
+
+        (a.line == b.line && a.line == self.line && is_between_columns)
+            || (a.column == b.column && a.column == self.column && is_between_lines)
+    }
 }
 
 impl Hash for Point {
@@ -98,6 +121,49 @@ mod tests {
         let min = point.min(&other);
         assert_eq!(min.line, 1);
         assert_eq!(min.column, 1);
+    }
+
+    #[test]
+    pub fn test_point_is_aligned() {
+        let point = Point::new(1, 2);
+        let other = Point::new(1, 3);
+        assert!(point.is_aligned(&other));
+
+        let point = Point::new(1, 2);
+        let other = Point::new(3, 1);
+        assert!(!point.is_aligned(&other));
+
+        let point = Point::new(1, 2);
+        let other = Point::new(1, 2);
+        assert!(point.is_aligned(&other));
+    }
+
+    #[test]
+    pub fn test_point_is_between_inclusive() {
+        let point = Point::new(1, 2);
+        let a = Point::new(0, 2);
+        let b = Point::new(2, 2);
+        assert!(point.is_between_inclusive(&a, &b));
+
+        let point = Point::new(1, 2);
+        let a = Point::new(1, 0);
+        let b = Point::new(1, 4);
+        assert!(point.is_between_inclusive(&a, &b));
+
+        let point = Point::new(1, 2);
+        let a = Point::new(0, 1);
+        let b = Point::new(2, 3);
+        assert!(!point.is_between_inclusive(&a, &b));
+
+        let point = Point::new(1, 2);
+        let a = Point::new(1, 2);
+        let b = Point::new(2, 3);
+        assert!(!point.is_between_inclusive(&a, &b));
+
+        let point = Point::new(1, 2);
+        let a = Point::new(2, 1);
+        let b = Point::new(3, 2);
+        assert!(!point.is_between_inclusive(&a, &b));
     }
 
     // #[test]

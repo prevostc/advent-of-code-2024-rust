@@ -3,7 +3,9 @@ use mygrid::direction::{Direction, UP};
 use mygrid::grid::Grid;
 use mygrid::point::Point;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
+
+type JumpTable = FxHashMap<Guard, Guard>;
 
 #[derive(Default, Clone, PartialEq, Eq, Hash, Debug)]
 struct Guard {
@@ -46,34 +48,44 @@ fn parse_grid_and_start_pos(input: &str) -> (Grid<char>, Point) {
 fn get_guard_path_positions_assuming_no_loops(
     grid: &Grid<char>,
     start_pos: Point,
-) -> FxHashSet<Point> {
+) -> (FxHashSet<Point>, JumpTable) {
     let mut guard = Guard {
         position: start_pos,
         direction: UP,
     };
     let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
-    visited.insert(guard.position);
+    let mut jump_table = JumpTable::default();
+    let mut old_guard = guard.clone();
 
     while let Some(new_guard) = guard.turn(grid) {
+        if new_guard.direction != guard.direction {
+            jump_table.insert(old_guard, guard.clone());
+            old_guard = new_guard.clone();
+        }
         guard = new_guard;
         visited.insert(guard.position);
     }
-    visited
+    (visited, jump_table)
 }
 
 #[inline]
-fn does_start_pos_loop(grid: &Grid<char>, start_pos: Point) -> bool {
+fn has_loops(grid: &Grid<char>, start_pos: Point, jump_table: &JumpTable) -> bool {
+    // remove entries from jump_table that contain pos between key and value
     let mut guard = Guard {
         position: start_pos,
         direction: UP,
     };
+
     let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
     visited.insert(guard.clone());
 
-    while let Some(new_guard) = guard.turn(grid) {
+    while let Some(new_guard) = guard.turn(&grid) {
         guard = new_guard;
         if !visited.insert(guard.clone()) {
             return true;
+        }
+        if let Some(next_guard) = jump_table.get(&guard) {
+            guard = next_guard.clone();
         }
     }
     false
@@ -81,20 +93,27 @@ fn does_start_pos_loop(grid: &Grid<char>, start_pos: Point) -> bool {
 
 pub fn part_one(input: &str) -> Option<u32> {
     let (grid, start_pos) = parse_grid_and_start_pos(input);
-    let visited = get_guard_path_positions_assuming_no_loops(&grid, start_pos);
+    let (visited, _) = get_guard_path_positions_assuming_no_loops(&grid, start_pos);
     Some(visited.len() as u32)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
     let (grid, start_pos) = parse_grid_and_start_pos(input);
-    let positions_to_check = get_guard_path_positions_assuming_no_loops(&grid, start_pos);
+    let (visited, jump_table) = get_guard_path_positions_assuming_no_loops(&grid, start_pos);
 
-    let count = positions_to_check
+    let count = visited
         .par_iter()
         .filter(|&&pos| {
             let mut grid = grid.clone();
+            let jump_table: JumpTable = JumpTable::from_iter(
+                jump_table
+                    .iter()
+                    .filter(|(key, val)| !pos.is_between_inclusive(&key.position, &val.position))
+                    .map(|(key, val)| (key.clone(), val.clone())),
+            );
             grid[pos] = 'O';
-            does_start_pos_loop(&grid, start_pos)
+
+            has_loops(&grid, pos, &jump_table)
         })
         .count();
 
