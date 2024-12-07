@@ -68,7 +68,6 @@ fn does_start_pos_loop(grid: &Grid<char>, start_pos: Point) -> bool {
         direction: UP,
     };
     let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
-    //let mut visited = FnvIndexSet::<Guard, 10_000>::new();
     visited.insert(guard.clone());
 
     while let Some(new_guard) = guard.turn(grid) {
