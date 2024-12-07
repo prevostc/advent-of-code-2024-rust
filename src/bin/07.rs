@@ -54,8 +54,13 @@ impl EquationData {
                     Op::Add => current_value + next_value,
                     Op::Mul => current_value * next_value,
                     Op::Concat => {
-                        let char_count = next_value.to_string().len() as u32;
-                        current_value * 10_u64.pow(char_count) + next_value
+                        let mut digit_count = 0;
+                        let mut n = next_value;
+                        while n > 0 {
+                            digit_count += 1;
+                            n /= 10;
+                        }
+                        current_value * 10_u64.pow(digit_count) + next_value
                     }
                 };
 
