@@ -98,6 +98,16 @@ impl Direction {
         self.vertical += other.vertical;
         self.horizontal += other.horizontal;
     }
+
+    #[inline]
+    pub fn to_u8(&self) -> u8 {
+        ((self.vertical + 1) << 2) as u8 | ((self.horizontal + 1) as u8)
+    }
+
+    #[inline]
+    pub fn from_u8(value: u8) -> Self {
+        Direction::new(((value >> 2) as isize) - 1, (value & 0b11) as isize - 1)
+    }
 }
 
 impl Hash for Direction {

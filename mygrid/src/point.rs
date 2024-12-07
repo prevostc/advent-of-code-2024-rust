@@ -71,6 +71,19 @@ impl Point {
         (a.line == b.line && a.line == self.line && is_between_columns)
             || (a.column == b.column && a.column == self.column && is_between_lines)
     }
+
+    #[inline]
+    pub fn to_u128(&self) -> u128 {
+        ((self.line as u128) << 64) | (self.column as u128)
+    }
+
+    #[inline]
+    pub fn from_u128(value: u128) -> Self {
+        Point::new(
+            (value >> 64) as isize,
+            (value & 0xFFFFFFFFFFFFFFFF) as isize,
+        )
+    }
 }
 
 impl Hash for Point {

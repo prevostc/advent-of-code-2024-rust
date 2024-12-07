@@ -54,7 +54,7 @@ fn get_guard_path_positions_assuming_no_loops(
         direction: UP,
     };
     let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
-    let mut jump_table = JumpTable::default();
+    let mut jump_table = JumpTable::with_capacity_and_hasher(10_000, Default::default());
     let mut old_guard = guard.clone();
 
     while let Some(new_guard) = guard.turn(grid) {
@@ -66,29 +66,6 @@ fn get_guard_path_positions_assuming_no_loops(
         visited.insert(guard.position);
     }
     (visited, jump_table)
-}
-
-#[inline]
-fn has_loops(grid: &Grid<char>, start_pos: Point, jump_table: &JumpTable) -> bool {
-    // remove entries from jump_table that contain pos between key and value
-    let mut guard = Guard {
-        position: start_pos,
-        direction: UP,
-    };
-
-    let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
-    visited.insert(guard.clone());
-
-    while let Some(new_guard) = guard.turn(&grid) {
-        guard = new_guard;
-        if !visited.insert(guard.clone()) {
-            return true;
-        }
-        if let Some(next_guard) = jump_table.get(&guard) {
-            guard = next_guard.clone();
-        }
-    }
-    false
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
@@ -105,15 +82,33 @@ pub fn part_two(input: &str) -> Option<u32> {
         .par_iter()
         .filter(|&&pos| {
             let mut grid = grid.clone();
-            let jump_table: JumpTable = JumpTable::from_iter(
-                jump_table
-                    .iter()
-                    .filter(|(key, val)| !pos.is_between_inclusive(&key.position, &val.position))
-                    .map(|(key, val)| (key.clone(), val.clone())),
-            );
             grid[pos] = 'O';
 
-            has_loops(&grid, pos, &jump_table)
+            let jump_table: JumpTable = jump_table
+                .iter()
+                .filter(|(key, val)| !pos.is_between_inclusive(&key.position, &val.position))
+                .map(|(key, val)| (key.clone(), val.clone()))
+                .collect();
+
+            // remove entries from jump_table that contain pos between key and value
+            let mut guard = Guard {
+                position: start_pos,
+                direction: UP,
+            };
+
+            let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
+            visited.insert(guard.clone());
+
+            while let Some(new_guard) = guard.turn(&grid) {
+                guard = new_guard;
+                if !visited.insert(guard.clone()) {
+                    return true;
+                }
+                if let Some(next_guard) = jump_table.get(&guard) {
+                    guard = next_guard.clone();
+                }
+            }
+            false
         })
         .count();
 
