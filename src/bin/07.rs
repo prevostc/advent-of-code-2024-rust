@@ -1,4 +1,3 @@
-use heapless::Vec as HeaplessVec;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 advent_of_code::solution!(7);
 
@@ -25,58 +24,48 @@ impl EquationData {
 
     #[inline]
     fn has_valid_ops_combination(&self, available_ops: &[Op]) -> bool {
-        let needed_ops = self.values.len() - 1;
-        if needed_ops == 0 {
-            return self.values[0] == self.test_value;
-        }
+        // Stack will store (current_target, remaining_numbers_index);
+        let mut stack = vec![(self.test_value, self.values.len() - 1)];
 
-        const OPS_SIZE: usize = 16;
-        const STACK_SIZE: usize = 32;
-
-        let mut stack = HeaplessVec::<_, STACK_SIZE>::new();
-        stack
-            .push((self.values[0], HeaplessVec::<_, OPS_SIZE>::new()))
-            .unwrap();
-
-        while let Some((current_value, mut ops)) = stack.pop() {
-            if ops.len() == needed_ops {
-                if current_value == self.test_value {
+        while let Some((current_target, idx)) = stack.pop() {
+            // Base case - if we're at the first number
+            if idx == 0 {
+                if self.values[0] == current_target {
                     return true;
                 }
                 continue;
             }
 
-            let next_idx = ops.len() + 1;
-            let next_value = self.values[next_idx];
+            let n = self.values[idx];
 
-            // Try each available operation
             for &op in available_ops {
-                let new_value = match op {
-                    Op::Add => current_value + next_value,
-                    Op::Mul => current_value * next_value,
+                match op {
+                    Op::Add => {
+                        if current_target >= n {
+                            stack.push((current_target - n, idx - 1));
+                        }
+                    }
+                    Op::Mul => {
+                        if current_target % n == 0 {
+                            stack.push((current_target / n, idx - 1));
+                        }
+                    }
                     Op::Concat => {
                         let mut digit_count = 0;
-                        let mut n = next_value;
-                        while n > 0 {
+                        let mut temp = n;
+                        while temp > 0 {
                             digit_count += 1;
-                            n /= 10;
+                            temp /= 10;
                         }
-                        current_value * 10_u64.pow(digit_count) + next_value
+                        let divisor = 10_u64.pow(digit_count);
+
+                        if current_target % divisor == n {
+                            stack.push((current_target / divisor, idx - 1));
+                        }
                     }
-                };
-
-                // Skip if we've already exceeded the target
-                if new_value > self.test_value {
-                    continue;
                 }
-
-                // Create new ops vector and push to stack
-                ops.push(op).unwrap();
-                stack.push((new_value, ops.clone())).unwrap();
-                ops.pop();
             }
         }
-
         false
     }
 }
