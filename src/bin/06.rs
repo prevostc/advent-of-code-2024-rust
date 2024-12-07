@@ -5,7 +5,7 @@ use mygrid::point::Point;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rustc_hash::FxHashSet;
 
-#[derive(Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, PartialEq, Eq, Hash, Debug)]
 struct Guard {
     position: Point,
     direction: Direction,
@@ -51,7 +51,7 @@ fn get_guard_path_positions_assuming_no_loops(
         position: start_pos,
         direction: UP,
     };
-    let mut visited = FxHashSet::default();
+    let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
     visited.insert(guard.position);
 
     while let Some(new_guard) = guard.turn(grid) {
@@ -61,12 +61,14 @@ fn get_guard_path_positions_assuming_no_loops(
     visited
 }
 
+#[inline]
 fn does_start_pos_loop(grid: &Grid<char>, start_pos: Point) -> bool {
     let mut guard = Guard {
         position: start_pos,
         direction: UP,
     };
-    let mut visited = FxHashSet::default();
+    let mut visited = FxHashSet::with_capacity_and_hasher(10_000, Default::default());
+    //let mut visited = FnvIndexSet::<Guard, 10_000>::new();
     visited.insert(guard.clone());
 
     while let Some(new_guard) = guard.turn(grid) {

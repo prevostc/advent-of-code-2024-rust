@@ -1,4 +1,4 @@
-use advent_of_code::template::commands::{all, download, read, scaffold, solve, time};
+use advent_of_code::template::commands::{all, download, flame, read, scaffold, solve, time};
 use args::{parse, AppArguments};
 
 #[cfg(feature = "today")]
@@ -27,6 +27,11 @@ mod args {
             release: bool,
             dhat: bool,
             submit: Option<u8>,
+        },
+        Flame {
+            day: Day,
+            release: bool,
+            dhat: bool,
         },
         All {
             release: bool,
@@ -67,6 +72,11 @@ mod args {
                 day: args.free_from_str()?,
                 download: args.contains("--download"),
                 overwrite: args.contains("--overwrite"),
+            },
+            Some("flame") => AppArguments::Flame {
+                day: args.free_from_str()?,
+                release: args.contains("--release"),
+                dhat: args.contains("--dhat"),
             },
             Some("solve") => AppArguments::Solve {
                 day: args.free_from_str()?,
@@ -122,6 +132,7 @@ fn main() {
                 dhat,
                 submit,
             } => solve::handle(day, release, dhat, submit),
+            AppArguments::Flame { day, release, dhat } => flame::handle(day, release, dhat),
             #[cfg(feature = "today")]
             AppArguments::Today => {
                 match Day::today() {
