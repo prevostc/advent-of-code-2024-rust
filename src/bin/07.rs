@@ -1,4 +1,5 @@
 use heapless::Vec as HeaplessVec;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 advent_of_code::solution!(7);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,10 +82,13 @@ impl EquationData {
 }
 
 fn solve(input: &str, ops: &[Op]) -> Option<u64> {
-    let sum = input
+    let lines: Vec<_> = input
         .lines()
         .filter(|l| !l.is_empty())
         .map(EquationData::parse)
+        .collect();
+    let sum = lines
+        .par_iter()
         .filter(|eq| eq.has_valid_ops_combination(ops))
         .map(|eq| eq.test_value)
         .sum();
