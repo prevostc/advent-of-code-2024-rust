@@ -22,7 +22,8 @@ fn solve(
         grid.iter_item_and_position()
             .filter(|(_, &c)| c != '.')
             .map(|(point, c)| (c, point)),
-    );
+    )
+    .unwrap();
 
     let mut pos_set: HeaplessHashSet<Point, 2048> = HeaplessHashSet::new();
     for (_, vec) in antennas.iter() {
