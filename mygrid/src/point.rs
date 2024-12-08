@@ -84,6 +84,16 @@ impl Point {
             (value & 0xFFFFFFFFFFFFFFFF) as isize,
         )
     }
+
+    #[inline]
+    pub fn as_direction(&self) -> Direction {
+        Direction::new(self.line, self.column)
+    }
+
+    #[inline]
+    pub fn as_vector_direction(&self, other: &Point) -> Direction {
+        Direction::new(other.line - self.line, other.column - self.column)
+    }
 }
 
 impl Hash for Point {
