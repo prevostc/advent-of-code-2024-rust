@@ -12,7 +12,10 @@ const MAX_ANTENNA_PER_TYPE: usize = 16;
 type AntennaMap<'a> =
     HeaplessHashMap<&'a char, HeaplessVec<Point, MAX_ANTENNA_PER_TYPE>, MAX_ANTENNA_TYPES>;
 
-fn solve<const PART1: bool>(input: &str) -> Option<u32> {
+fn solve(
+    input: &str,
+    update_set: &mut impl FnMut(&Grid<char>, &mut HeaplessHashSet<Point, 2048>, (Point, Point)),
+) -> Option<u32> {
     let grid = Grid::new_char_grid_from_str(input);
 
     let antennas: AntennaMap = into_group_map_heapless(
@@ -24,33 +27,36 @@ fn solve<const PART1: bool>(input: &str) -> Option<u32> {
     let mut pos_set: HeaplessHashSet<Point, 2048> = HeaplessHashSet::new();
     for (_, vec) in antennas.iter() {
         for (a, b) in vec.iter().tuple_combinations() {
-            for (a, b) in [(a, b), (b, a)] {
-                let dir = b.as_vector_direction(a);
-                let mut p = *a + dir;
-                if PART1 {
-                    if grid.is_in_bounds(p) {
-                        pos_set.insert(p).unwrap();
-                    }
-                } else {
-                    pos_set.insert(*a).unwrap();
-                    pos_set.insert(*b).unwrap();
-                    while grid.is_in_bounds(p) {
-                        pos_set.insert(p).unwrap();
-                        p = p + dir;
-                    }
-                }
+            for (&a, &b) in [(a, b), (b, a)] {
+                update_set(&grid, &mut pos_set, (a, b));
             }
         }
     }
 
     Some(pos_set.len() as u32)
 }
+
 pub fn part_one(input: &str) -> Option<u32> {
-    solve::<true>(input)
+    solve(input, &mut |grid, pos_set, (a, b)| {
+        let dir = b.as_vector_direction(&a);
+        let p = a + dir;
+        if grid.is_in_bounds(p) {
+            pos_set.insert(p).unwrap();
+        }
+    })
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    solve::<false>(input)
+    solve(input, &mut |grid, pos_set, (a, b)| {
+        let dir = b.as_vector_direction(&a);
+        let mut p = a + dir;
+        pos_set.insert(a).unwrap();
+        pos_set.insert(b).unwrap();
+        while grid.is_in_bounds(p) {
+            pos_set.insert(p).unwrap();
+            p = p + dir;
+        }
+    })
 }
 
 #[cfg(test)]
