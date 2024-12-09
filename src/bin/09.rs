@@ -91,55 +91,40 @@ fn parse_blocks(input: &str) -> Vec<Block> {
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
-    let mut blocks = parse_blocks(input);
+    const EMPTY: usize = usize::MAX;
+    let nums: Vec<usize> = input
+        .chars()
+        .map(|c| c.to_digit(10))
+        .filter(|r| r.is_some())
+        .map(|r| r.unwrap())
+        .enumerate()
+        // create the full disk with all the file ids
+        .flat_map(|(i, num)| (0..num).map(move |_| if i % 2 == 0 { i / 2 } else { EMPTY }))
+        .collect();
 
-    // have 2 pointers, one at the start of the disk, one at the end
-    // move the pointer at the end to the leftmost free space block
-    // move the pointer at the start to the rightmost file block
-    // if the pointers meet, we're done
-    // if we have a free space block, we want to grab some of the file blocks to put in place of it
-
-    let mut left_block_idx = 0;
-    let mut right_block_idx = blocks.len() - 1;
-    while left_block_idx < right_block_idx {
-        let left_block = &blocks[left_block_idx];
-        let right_block = &blocks[right_block_idx];
-
-        if !left_block.is_free() {
-            left_block_idx += 1;
+    let mut left = 0;
+    let mut right = nums.len() - 1;
+    let mut checksum = 0;
+    while left <= right {
+        let left_num = nums[left];
+        if left_num != EMPTY {
+            checksum += (left * left_num) as u64;
+            left += 1;
             continue;
         }
 
-        if !right_block.is_file() {
-            right_block_idx -= 1;
+        let right_num = nums[right];
+        if right_num != EMPTY {
+            checksum += (left * right_num) as u64;
+            right -= 1;
+            left += 1;
             continue;
         }
 
-        // now we have a free space block and a file block
-        // we want to grab some of the file blocks to put in place of the free space block
-
-        let left_size = left_block.length;
-        let (right_movable, maybe_right_unmovable) = right_block.split(left_size);
-        let (_, maybe_left_additional_space) = left_block.split(right_movable.length);
-
-        // move the movable part
-        if let Some(left_additional_space) = maybe_left_additional_space {
-            blocks.insert(left_block_idx, right_movable);
-            blocks[left_block_idx + 1] = left_additional_space;
-            right_block_idx += 1;
-        } else {
-            blocks[left_block_idx] = right_movable;
-        }
-
-        if let Some(right_unmovable) = maybe_right_unmovable {
-            blocks[right_block_idx] = right_unmovable;
-        } else {
-            blocks.remove(right_block_idx);
-            right_block_idx -= 1;
-        }
+        right -= 1;
     }
 
-    Some(checksum(&blocks))
+    Some(checksum)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
