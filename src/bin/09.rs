@@ -148,6 +148,14 @@ pub fn part_two(input: &str) -> Option<u64> {
     // 2 pointers again but this time we want to move whole files to the leftmost span of free space blocks that could fit the file
     // we want to move the files in order of decreasing file ID number
     // if there is no span of free space to the left of a file that is large enough to fit the file, the file does not move
+
+    let mut spaces_block_indices: Vec<usize> = Vec::with_capacity(1000);
+    for (i, b) in blocks.iter().enumerate() {
+        if b.file_id.is_none() {
+            spaces_block_indices.push(i);
+        }
+    }
+
     let mut right_block_idx = blocks.len() - 1;
     while right_block_idx > 0 {
         let right_block = &blocks[right_block_idx];
@@ -158,18 +166,28 @@ pub fn part_two(input: &str) -> Option<u64> {
 
         // look for a free space block that can fit the file
         let mut free_space_block_idx = None;
-        for i in 0..right_block_idx {
-            let left_block = &blocks[i];
-            if left_block.is_free() && left_block.length >= right_block.length {
-                free_space_block_idx = Some(i);
+        for (i, space_idx) in spaces_block_indices.iter().enumerate() {
+            if *space_idx > right_block_idx {
+                break;
+            }
+            let left_block = &blocks[*space_idx];
+            if left_block.length > right_block.length {
+                free_space_block_idx = Some(*space_idx);
+                for i in i..spaces_block_indices.len() {
+                    spaces_block_indices[i] += 1;
+                }
+                break;
+            } else if left_block.length == right_block.length {
+                free_space_block_idx = Some(*space_idx);
+                spaces_block_indices.remove(i);
                 break;
             }
         }
 
         if let Some(left_block_idx) = free_space_block_idx {
             let left_block = &blocks[left_block_idx];
-
             let (_, maybe_left_additional_space) = left_block.split(right_block.length);
+
             if let Some(left_additional_space) = maybe_left_additional_space {
                 blocks.insert(left_block_idx, right_block.clone());
                 blocks[left_block_idx + 1] = left_additional_space;
