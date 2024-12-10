@@ -10,7 +10,6 @@ pub fn part_one(input: &str) -> Option<u32> {
     let grid: Grid<u8> = Grid::new_from_str(input, |c| c.to_digit(10).unwrap() as u8);
 
     let trailheads = grid
-        // TODO: par_iter_item_and_position()
         .iter_item_and_position()
         .filter(|(_, &value)| value == 0)
         .map(|(pos, _)| pos);
@@ -53,7 +52,6 @@ pub fn part_two(input: &str) -> Option<u32> {
     let grid: Grid<u8> = Grid::new_from_str(input, |c| c.to_digit(10).unwrap() as u8);
 
     let trailheads = grid
-        // TODO: par_iter_item_and_position()
         .iter_item_and_position()
         .filter(|(_, &value)| value == 0)
         .map(|(pos, _)| pos);
