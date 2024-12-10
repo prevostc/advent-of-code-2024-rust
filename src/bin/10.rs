@@ -1,55 +1,17 @@
 use heapless::FnvIndexSet;
-use mygrid::{direction::ORTHOGONAL, grid::Grid, point::Point};
-use std::collections::VecDeque;
+use heapless::Vec as HeaplessVec;
+use mygrid::heapless_grid::HeaplessGrid;
+use mygrid::{direction::ORTHOGONAL, point::Point};
 
-type Found = FnvIndexSet<Point, 128>;
+type Queue = HeaplessVec<Point, 128>;
+type Found = FnvIndexSet<Point, 32>;
 
 advent_of_code::solution!(10);
 
-pub fn part_one(input: &str) -> Option<u32> {
-    let grid: Grid<u8> = Grid::new_from_str(input, |c| c.to_digit(10).unwrap() as u8);
-
-    let trailheads = grid
-        .iter_item_and_position()
-        .filter(|(_, &value)| value == 0)
-        .map(|(pos, _)| pos);
-
-    let trailhead_scores = trailheads
-        .map(|starting_point| {
-            let mut visited = Grid::new(grid.width, grid.height, false);
-            let mut found = Found::new();
-
-            let mut q = VecDeque::with_capacity(128);
-            q.push_back(starting_point);
-            visited[starting_point] = true;
-
-            while let Some(current) = q.pop_front() {
-                visited[current] = true;
-                if grid[current] == 9 {
-                    visited[current] = true;
-                    found.insert(current).unwrap();
-                    continue;
-                }
-                for n in ORTHOGONAL
-                    .iter()
-                    .map(|&dir| current + dir)
-                    .filter(|&p| grid.is_in_bounds(p))
-                    .filter(|&p| grid[p] == grid[current] + 1)
-                    .filter(|&p| !visited[p])
-                {
-                    q.push_front(n);
-                }
-            }
-
-            found.len() as u32
-        })
-        .sum();
-
-    Some(trailhead_scores)
-}
-
-pub fn part_two(input: &str) -> Option<u32> {
-    let grid: Grid<u8> = Grid::new_from_str(input, |c| c.to_digit(10).unwrap() as u8);
+#[inline]
+fn solve<const PART: u8>(input: &str) -> Option<u32> {
+    let grid: HeaplessGrid<u8, 2048> =
+        HeaplessGrid::new_from_str(input, |c| c.to_digit(10).unwrap() as u8);
 
     let trailheads = grid
         .iter_item_and_position()
@@ -59,13 +21,15 @@ pub fn part_two(input: &str) -> Option<u32> {
     let trailhead_scores = trailheads
         .map(|starting_point| {
             let mut found = 0;
+            let mut found_unique = Found::new();
 
-            let mut q = VecDeque::with_capacity(128);
-            q.push_back(starting_point);
+            let mut q = Queue::new();
+            q.push(starting_point).unwrap();
 
-            while let Some(current) = q.pop_front() {
+            while let Some(current) = q.pop() {
                 if grid[current] == 9 {
                     found += 1;
+                    found_unique.insert(current).unwrap();
                     continue;
                 }
                 for n in ORTHOGONAL
@@ -74,15 +38,29 @@ pub fn part_two(input: &str) -> Option<u32> {
                     .filter(|&p| grid.is_in_bounds(p))
                     .filter(|&p| grid[p] == grid[current] + 1)
                 {
-                    q.push_front(n);
+                    q.push(n).unwrap();
                 }
             }
 
-            found
+            if PART == 1 {
+                found_unique.len() as u32
+            } else {
+                found
+            }
         })
         .sum();
 
     Some(trailhead_scores)
+}
+
+#[inline]
+pub fn part_one(input: &str) -> Option<u32> {
+    solve::<1>(input)
+}
+
+#[inline]
+pub fn part_two(input: &str) -> Option<u32> {
+    solve::<2>(input)
 }
 
 #[cfg(test)]

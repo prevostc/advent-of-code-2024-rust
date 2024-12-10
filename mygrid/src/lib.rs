@@ -6,5 +6,6 @@ extern crate rayon;
 
 pub mod direction;
 pub mod grid;
+pub mod heapless_grid;
 pub mod par_grid;
 pub mod point;
