@@ -27,6 +27,7 @@ chrono = { version = "0.4.38", optional = true }
 dhat = { version = "0.3.3", optional = true }
 heapless = "0.8.0"
 itertools = "0.13.0"
+memoize = "0.4.2"
 mygrid = { version = "0.0.1", path = "mygrid" }
 pico-args = "0.5.0"
 rayon = "1.10.0"
