@@ -7,6 +7,7 @@ type Stone = u64;
 type Step = u8;
 
 #[memoize]
+// have a memoize cache buster to fix timing multiple runs
 fn blink_rec(_cache_buster: u64, stone: Stone, times: Step) -> u64 {
     if times == 0 {
         return 1;
@@ -22,7 +23,8 @@ fn blink_rec(_cache_buster: u64, stone: Stone, times: Step) -> u64 {
         digit_count += 1;
         temp /= 10;
     }
-
+    // makes p1 2x slower but p2 0.2x faster
+    // let digit_count = stone.checked_ilog10().unwrap_or(0);
     if digit_count % 2 == 0 {
         let divisor: u64 = 10_u64.pow(digit_count / 2);
         let (upper, lower) = stone.div_rem_euclid(&divisor);
