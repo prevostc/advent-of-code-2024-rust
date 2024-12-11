@@ -9,10 +9,6 @@ struct Block {
 }
 
 impl Block {
-    fn is_file(&self) -> bool {
-        self.file_id.is_some()
-    }
-
     fn is_free(&self) -> bool {
         self.file_id.is_none()
     }
@@ -35,21 +31,21 @@ impl Block {
     }
 }
 
-struct BlocksFmt<'a>(&'a Vec<Block>);
+// struct BlocksFmt<'a>(&'a Vec<Block>);
 
-impl Debug for BlocksFmt<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for block in self.0 {
-            for _ in 0..block.length {
-                match block.file_id {
-                    Some(id) => write!(f, "{}", id)?,
-                    None => write!(f, ".")?,
-                }
-            }
-        }
-        Ok(())
-    }
-}
+// impl Debug for BlocksFmt<'_> {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         for block in self.0 {
+//             for _ in 0..block.length {
+//                 match block.file_id {
+//                     Some(id) => write!(f, "{}", id)?,
+//                     None => write!(f, ".")?,
+//                 }
+//             }
+//         }
+//         Ok(())
+//     }
+// }
 
 fn checksum(blocks: &Vec<Block>) -> u64 {
     let mut sum: u64 = 0;
