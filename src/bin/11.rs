@@ -1,4 +1,5 @@
 use memoize::memoize;
+use num::traits::Euclid;
 
 advent_of_code::solution!(11);
 
@@ -6,13 +7,13 @@ type Stone = u64;
 type Step = u8;
 
 #[memoize]
-fn blink_rec(stone: Stone, times: Step) -> u64 {
+fn blink_rec(_cache_buster: u64, stone: Stone, times: Step) -> u64 {
     if times == 0 {
         return 1;
     }
 
     if stone == 0 {
-        return blink_rec(1, times - 1);
+        return blink_rec(_cache_buster, 1, times - 1);
     }
 
     let mut digit_count = 0;
@@ -23,14 +24,22 @@ fn blink_rec(stone: Stone, times: Step) -> u64 {
     }
 
     if digit_count % 2 == 0 {
-        let divisor = 10_u64.pow(digit_count / 2);
-        return blink_rec(stone / divisor, times - 1) + blink_rec(stone % divisor, times - 1);
+        let divisor: u64 = 10_u64.pow(digit_count / 2);
+        let (upper, lower) = stone.div_rem_euclid(&divisor);
+        return blink_rec(_cache_buster, lower, times - 1)
+            + blink_rec(_cache_buster, upper, times - 1);
     }
 
-    return blink_rec(stone * 2024, times - 1);
+    return blink_rec(_cache_buster, stone * 2024, times - 1);
 }
 
+static mut GLOBAL_SEQ: u64 = 0;
+
 fn solve(input: &str, times: Step) -> u64 {
+    let cache_buster = unsafe { GLOBAL_SEQ };
+    unsafe {
+        GLOBAL_SEQ += 1;
+    }
     let stones = input
         .split_whitespace()
         .filter(|p| !p.is_empty())
@@ -41,7 +50,7 @@ fn solve(input: &str, times: Step) -> u64 {
 
     let count = stones
         .iter() // so fast that parallel is slower
-        .map(|start_stone| blink_rec(*start_stone, times))
+        .map(|start_stone| blink_rec(cache_buster, *start_stone, times))
         .sum::<u64>();
 
     return count;
