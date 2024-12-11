@@ -14,6 +14,7 @@ fn blink_rec(stone: Stone, times: Step) -> u64 {
     if stone == 0 {
         return blink_rec(1, times - 1);
     }
+
     let mut digit_count = 0;
     let mut temp = stone;
     while temp > 0 {
@@ -58,12 +59,6 @@ pub fn part_two(input: &str) -> Option<u64> {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_part_one() {
-    //     let result = part_one("125");
-    //     assert_eq!(result, Some(55312));
-    // }
-
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
@@ -73,6 +68,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(65601038650482));
     }
 }
