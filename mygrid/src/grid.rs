@@ -204,6 +204,13 @@ impl<T> Grid<T> {
     }
 
     #[inline]
+    pub fn iter_positions(&self) -> impl Iterator<Item = Point> {
+        let width = self.width as isize;
+        let height = self.height as isize;
+        (0..height).flat_map(move |line| (0..width).map(move |column| Point::new(line, column)))
+    }
+
+    #[inline]
     pub fn get_item(&self, point: Point) -> Option<&T> {
         if self.is_in_bounds(point) {
             Some(&self.content[((point.line as usize) * self.width) + (point.column as usize)])
@@ -249,6 +256,7 @@ impl<T> Grid<T> {
 
 impl<T: std::fmt::Display> std::fmt::Display for Grid<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "({}, {})", self.width, self.height)?;
         for r in 0..self.height {
             for c in 0..self.width {
                 let point = Point::new_usize(r, c);
@@ -262,6 +270,7 @@ impl<T: std::fmt::Display> std::fmt::Display for Grid<T> {
 
 impl<T: std::fmt::Display> std::fmt::Debug for Grid<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "({}, {})", self.width, self.height)?;
         write!(f, "{}", self)
     }
 }
@@ -273,6 +282,34 @@ impl<T: PartialEq> Grid<T> {
             .iter()
             .position(|t| *t == *item)
             .map(|i| Point::new_usize(i / self.width, i % self.width))
+    }
+}
+
+impl<T: Clone> Grid<T> {
+    #[inline]
+    pub fn map<N: Default + Copy>(&self, f: impl Fn(Point, &T) -> N) -> Grid<N> {
+        let mut new_grid = Grid::new(self.width, self.height, N::default());
+        for point in self.iter_positions() {
+            new_grid[point] = f(point, &self[point]);
+        }
+        new_grid
+    }
+}
+
+impl Grid<bool> {
+    #[inline]
+    pub fn to_debug(&self) -> Grid<char> {
+        self.map(|_, &b| if b { '#' } else { '.' })
+    }
+
+    #[inline]
+    pub fn is_true(&self, point: Point) -> bool {
+        self.is_in_bounds(point) && self[point]
+    }
+
+    #[inline]
+    pub fn is_false(&self, point: Point) -> bool {
+        !self.is_in_bounds(point) || !self[point]
     }
 }
 
