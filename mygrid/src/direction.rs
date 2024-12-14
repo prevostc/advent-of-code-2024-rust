@@ -198,6 +198,15 @@ impl Mul<i32> for Direction {
     }
 }
 
+impl Mul<u32> for Direction {
+    type Output = Direction;
+
+    #[inline]
+    fn mul(self, rhs: u32) -> Self::Output {
+        self * (rhs as isize)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
