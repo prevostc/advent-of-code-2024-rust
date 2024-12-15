@@ -1,5 +1,5 @@
 use std::hash::{Hash, Hasher};
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Sub};
 
 use crate::point::Point;
 
@@ -177,6 +177,15 @@ impl Add<Point> for Direction {
     #[inline]
     fn add(self, rhs: Point) -> Self::Output {
         rhs.apply_direction(self)
+    }
+}
+
+impl Sub<Direction> for Point {
+    type Output = Point;
+
+    #[inline]
+    fn sub(self, rhs: Direction) -> Self::Output {
+        Point::new(self.line - rhs.vertical, self.column - rhs.horizontal)
     }
 }
 

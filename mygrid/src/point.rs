@@ -3,7 +3,10 @@
 // heavily inspired by the amazing maneatingape repo, from which I learned a lot, plz see:
 // https://github.com/maneatingape/advent-of-code-rust/blob/main/src/util/point.rs
 
-use std::hash::{Hash, Hasher};
+use std::{
+    hash::{Hash, Hasher},
+    ops::Mul,
+};
 
 use crate::direction::Direction;
 
@@ -107,6 +110,14 @@ impl Hash for Point {
 impl std::fmt::Display for Point {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "(l:{}, c:{})", self.line, self.column)
+    }
+}
+
+impl Mul<isize> for Point {
+    type Output = Point;
+
+    fn mul(self, direction: isize) -> Self {
+        Point::new(self.line * direction, self.column * direction)
     }
 }
 
