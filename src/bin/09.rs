@@ -4,6 +4,7 @@ advent_of_code::solution!(9);
 
 #[derive(Debug, Clone)]
 struct Block {
+    start_idx: usize,
     length: u32,
     file_id: Option<u32>,
 }
@@ -19,46 +20,18 @@ impl Block {
         } else {
             (
                 Block {
-                    length: length,
+                    start_idx: self.start_idx,
+                    length,
                     file_id: self.file_id,
                 },
                 Some(Block {
+                    start_idx: self.start_idx + length as usize,
                     length: self.length - length,
                     file_id: self.file_id,
                 }),
             )
         }
     }
-}
-
-// struct BlocksFmt<'a>(&'a Vec<Block>);
-
-// impl Debug for BlocksFmt<'_> {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         for block in self.0 {
-//             for _ in 0..block.length {
-//                 match block.file_id {
-//                     Some(id) => write!(f, "{}", id)?,
-//                     None => write!(f, ".")?,
-//                 }
-//             }
-//         }
-//         Ok(())
-//     }
-// }
-
-fn checksum(blocks: &Vec<Block>) -> u64 {
-    let mut sum: u64 = 0;
-    let mut idx = 0;
-    for block in blocks {
-        for _ in 0..block.length {
-            if let Some(file_id) = block.file_id {
-                sum += idx * (file_id as u64);
-            }
-            idx += 1;
-        }
-    }
-    sum
 }
 
 fn parse_blocks(input: &str) -> Vec<Block> {
@@ -69,6 +42,7 @@ fn parse_blocks(input: &str) -> Vec<Block> {
         .map(|r| r.unwrap());
 
     let mut blocks = Vec::with_capacity(1000);
+    let mut idx = 0;
     for (i, num) in nums.enumerate() {
         let file_id = if i % 2 == 0 {
             Some((i / 2) as u32)
@@ -81,11 +55,13 @@ fn parse_blocks(input: &str) -> Vec<Block> {
         }
 
         let b = Block {
+            start_idx: idx,
             file_id,
             length: num,
         };
 
         blocks.push(b);
+        idx += num as usize;
     }
 
     blocks
@@ -149,11 +125,15 @@ pub fn part_two(input: &str) -> Option<u64> {
             spaces_block_indices_by_size[b.length as usize].push(i);
         });
 
-    let mut right_block_idx = blocks.len() - 1;
-    while right_block_idx > 0 {
+    let mut checksum = 0;
+
+    for right_block_idx in (0..blocks.len()).rev() {
         let right_block = &blocks[right_block_idx].clone();
         if right_block.is_free() {
-            right_block_idx -= 1;
+            continue;
+        }
+
+        if right_block.length == 0 {
             continue;
         }
 
@@ -167,50 +147,47 @@ pub fn part_two(input: &str) -> Option<u64> {
             }
         }
 
+        // can't move the file, so just add to the checksum
         if best_free_space_block_idx == usize::MAX {
-            right_block_idx -= 1;
+            checksum += (0..right_block.length as u64)
+                .map(|i| (right_block.start_idx as u64 + i))
+                .sum::<u64>()
+                * right_block.file_id.unwrap() as u64;
             continue;
         }
 
         let left_block_idx = best_free_space_block_idx;
-        let left_block = &blocks[left_block_idx];
+        let left_block = &blocks[left_block_idx].clone();
         spaces_block_indices_by_size[left_block.length as usize].pop();
 
         let (_, maybe_left_additional_space) = left_block.split(right_block.length);
         if let Some(left_additional_space) = maybe_left_additional_space {
-            let new_idx = left_block_idx + 1;
-            blocks.insert(left_block_idx, right_block.clone());
-
-            // shift all the indices that are greater than the left block index
-            spaces_block_indices_by_size
-                .iter_mut()
-                .flat_map(|space_list| space_list.iter_mut())
-                .filter(|idx| **idx > left_block_idx)
-                .for_each(|idx| *idx += 1);
-
             // add the new space to the list
             let space_list =
                 &mut spaces_block_indices_by_size[left_additional_space.length as usize];
             let mut insert_idx = space_list.len();
             for i in (0..space_list.len()).rev() {
-                if space_list[i] > new_idx {
+                if space_list[i] > left_block_idx {
                     break;
                 }
                 insert_idx = i;
             }
-            space_list.insert(insert_idx, new_idx);
+            space_list.insert(insert_idx, left_block_idx);
 
-            blocks[new_idx] = left_additional_space;
-            right_block_idx += 1;
+            blocks[left_block_idx] = left_additional_space;
         } else {
-            blocks[left_block_idx] = right_block.clone();
+            blocks[left_block_idx].length = 0;
         }
 
-        blocks[right_block_idx].file_id = None;
-        right_block_idx -= 1;
+        let checksum_contribution = (0..right_block.length as u64)
+            .map(|i| (left_block.start_idx as u64 + i))
+            .sum::<u64>()
+            * right_block.file_id.unwrap() as u64;
+
+        checksum += checksum_contribution
     }
 
-    Some(checksum(&blocks))
+    Some(checksum)
 }
 
 #[cfg(test)]
