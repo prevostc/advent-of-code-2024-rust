@@ -183,10 +183,12 @@ pub fn part_two(input: &str) -> Option<u64> {
                 s.dir = dir;
                 q.push_back(s);
             }
-            _ => {
-                for (idx, &is_viable) in viable_options.iter().enumerate() {
+            _ => viable_options
+                .iter()
+                .enumerate()
+                .for_each(|(idx, &is_viable)| {
                     if !is_viable {
-                        continue;
+                        return;
                     }
 
                     let (pos, dir, cost) = all_options[idx];
@@ -200,8 +202,7 @@ pub fn part_two(input: &str) -> Option<u64> {
                         cost,
                     };
                     q.push_back(new_state);
-                }
-            }
+                }),
         }
     }
 
