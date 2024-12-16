@@ -1,9 +1,9 @@
-use object_pool::Pool;
 use std::collections::VecDeque;
 
 use mygrid::{
     direction::{Direction, DOWN, LEFT, RIGHT, UP},
     grid::Grid,
+    point::Point,
 };
 
 advent_of_code::solution!(16);
@@ -19,143 +19,119 @@ fn dir_to_index(dir: Direction) -> usize {
     }
 }
 
-pub fn part_one(input: &str) -> Option<u64> {
-    let (grid, start) = Grid::new_from_str_capture_start(input, &|c| c, &|c| c == 'S');
-    let target_pos = grid.find_position_of(&'E').unwrap();
+#[inline]
+fn index_to_dir(idx: usize) -> Direction {
+    match idx {
+        0 => RIGHT,
+        1 => DOWN,
+        2 => LEFT,
+        3 => UP,
+        _ => unreachable!(),
+    }
+}
 
+#[inline]
+fn build_best_cost_grid(grid: &Grid<char>, start: Point, target_pos: Point) -> Grid<[i64; 4]> {
+    let mut best_cost_grid = Grid::new(grid.width, grid.height, [i64::MAX; 4]);
     let mut q = VecDeque::new();
     q.push_back((start, RIGHT, 0));
 
-    let mut best_cost_grid = Grid::new(grid.width, grid.height, [u64::MAX; 4]);
-
+    let mut best_target_cost = i64::MAX;
     while let Some((pos, dir, cost)) = q.pop_front() {
         if pos == target_pos {
-            best_cost_grid[pos][dir_to_index(dir)] = cost;
-            continue;
-        }
-
-        let right = dir.rotate_clockwise();
-        let left = dir.rotate_counterclockwise();
-
-        for &(pos, dir, cost) in [
-            (pos + dir, dir, cost + 1),
-            (pos + right, right, cost + 1000 + 1),
-            (pos + left, left, cost + 1000 + 1),
-        ]
-        .iter()
-        {
-            if grid[pos] == '#' {
-                continue;
-            }
-            let best_cost = best_cost_grid[pos][dir_to_index(dir)];
-            if best_cost <= cost {
-                continue;
-            }
-            best_cost_grid[pos][dir_to_index(dir)] = cost;
-
-            q.push_back((pos, dir, cost));
-        }
-    }
-
-    let min_cost = *best_cost_grid[target_pos].iter().min().unwrap();
-    Some(min_cost)
-}
-
-pub fn part_two(input: &str) -> Option<u64> {
-    let (grid, start) = Grid::new_from_str_capture_start(input, &|c| c, &|c| c == 'S');
-    let target_pos = grid.find_position_of(&'E').unwrap();
-
-    const PATH_CAPACITY: usize = 512;
-    let path_pool = Pool::new(256, || Vec::with_capacity(PATH_CAPACITY));
-    let mut path = path_pool.pull(|| Vec::with_capacity(PATH_CAPACITY));
-    path.push(start);
-
-    let mut q = VecDeque::new();
-    q.push_back((path, start, RIGHT, 0));
-
-    let base_false_grid = Grid::new(grid.width, grid.height, false);
-    let mut best_spots_grid = base_false_grid.clone();
-    let mut best_target_cost = u64::MAX;
-    let mut best_cost_grid = Grid::new(grid.width, grid.height, [u64::MAX; 4]);
-
-    while let Some((mut path, pos, dir, cost)) = q.pop_front() {
-        if pos == target_pos {
-            if best_target_cost < cost {
-                continue;
-            }
-
-            // reset best_spots_grid if we found a better path
-            if best_target_cost > cost {
-                best_spots_grid = base_false_grid.clone();
-            }
-
-            for &p in path.iter() {
-                best_spots_grid[p] = true;
-            }
-
             best_target_cost = cost;
             continue;
         }
 
-        best_cost_grid[pos][dir_to_index(dir)] = cost;
-
         let right = dir.rotate_clockwise();
         let left = dir.rotate_counterclockwise();
-        let is_viable = |&(pos, dir, cost)| {
-            if grid[pos] == '#' {
-                return false;
-            }
-            let best_cost_to_next_pos = best_cost_grid[pos][dir_to_index(dir)];
-            if best_cost_to_next_pos < cost {
-                return false;
-            }
-            if cost > best_target_cost {
-                return false;
-            }
-            true
-        };
 
-        let all_options = [
+        [
             (pos + dir, dir, cost + 1),
             (pos + left, left, cost + 1000 + 1),
             (pos + right, right, cost + 1000 + 1),
-        ];
-
-        let viable_options = [
-            is_viable(&all_options[0]),
-            is_viable(&all_options[1]),
-            is_viable(&all_options[2]),
-        ];
-
-        // fast path when there is only one option to avoid copying the path
-        let viable_count = viable_options.iter().filter(|&&b| b).count();
-        match viable_count {
-            0 => continue,
-            1 => {
-                let idx = viable_options.iter().position(|&b| b).unwrap();
-                let (pos, dir, cost) = all_options[idx];
-                path.push(pos);
-                q.push_back((path, pos, dir, cost));
+        ]
+        .iter()
+        .for_each(|&(pos, dir, cost)| {
+            if grid[pos] == '#' {
+                return;
             }
-            _ => viable_options
-                .iter()
-                .enumerate()
-                .for_each(|(idx, &is_viable)| {
-                    if !is_viable {
-                        return;
-                    }
+            if best_cost_grid[pos][dir_to_index(dir)] <= cost {
+                return;
+            }
+            if cost > best_target_cost {
+                return;
+            }
 
-                    let (pos, dir, cost) = all_options[idx];
-                    let mut new_path = path_pool.pull(|| Vec::with_capacity(PATH_CAPACITY));
-                    new_path.clone_from(&path);
-                    new_path.push(pos);
-                    q.push_back((new_path, pos, dir, cost));
-                }),
-        }
+            best_cost_grid[pos][dir_to_index(dir)] = cost;
+            q.push_back((pos, dir, cost));
+        });
     }
 
-    let tile_count = best_spots_grid.iter().filter(|&&b| b).count();
-    Some(tile_count as u64)
+    best_cost_grid
+}
+
+pub fn part_one(input: &str) -> Option<i64> {
+    let (grid, start) = Grid::new_from_str_capture_start(input, &|c| c, &|c| c == 'S');
+    let target_pos = grid.find_position_of(&'E').unwrap();
+
+    let best_cost_grid = build_best_cost_grid(&grid, start, target_pos);
+    let min_cost = *best_cost_grid[target_pos].iter().min().unwrap();
+
+    Some(min_cost)
+}
+
+pub fn part_two(input: &str) -> Option<i64> {
+    let (grid, start) = Grid::new_from_str_capture_start(input, &|c| c, &|c| c == 'S');
+    let target_pos = grid.find_position_of(&'E').unwrap();
+
+    let best_cost_grid = build_best_cost_grid(&grid, start, target_pos);
+    let (idx, &best_cost) = best_cost_grid[target_pos]
+        .iter()
+        .enumerate()
+        .min_by_key(|&(_, &cost)| cost)
+        .unwrap();
+    let best_dir = index_to_dir(idx);
+    let mut seen = Grid::new(grid.width, grid.height, false);
+
+    // reverse lookup
+    let (target_pos, start) = (start, target_pos);
+    seen[start] = true;
+
+    let mut q = VecDeque::new();
+    q.push_back((start, best_dir, best_cost));
+
+    while let Some((pos, dir, cost)) = q.pop_front() {
+        if pos == target_pos {
+            continue;
+        }
+
+        let right = dir.rotate_clockwise();
+        let left = dir.rotate_counterclockwise();
+        [
+            (pos - dir, dir, cost - 1),
+            (pos - dir, right, cost - 1000 - 1),
+            (pos - dir, left, cost - 1000 - 1),
+            (pos + left, left, cost - 1000 - 1),
+            (pos + right, left, cost - 1000 - 1),
+        ]
+        .iter()
+        .for_each(|&(pos, dir, cost)| {
+            if cost < 0 {
+                return;
+            }
+            if grid[pos] == '#' {
+                return;
+            }
+            if cost == best_cost_grid[pos][dir_to_index(dir)] {
+                seen[pos] = true;
+                q.push_back((pos, dir, cost));
+            }
+        });
+    }
+
+    let tile_count = seen.iter().filter(|&&b| b).count();
+    Some(tile_count as i64 + 1 /* + target */)
 }
 
 #[cfg(test)]
@@ -179,6 +155,14 @@ mod tests {
     }
 
     #[test]
+    fn test_part_one_3() {
+        let result = part_one(&advent_of_code::template::read_file_part(
+            "examples", DAY, 3,
+        ));
+        assert_eq!(result, Some(9024));
+    }
+
+    #[test]
     fn test_part_two_1() {
         let result = part_two(&advent_of_code::template::read_file_part(
             "examples", DAY, 1,
@@ -192,5 +176,13 @@ mod tests {
             "examples", DAY, 2,
         ));
         assert_eq!(result, Some(64));
+    }
+
+    #[test]
+    fn test_part_two_3() {
+        let result = part_two(&advent_of_code::template::read_file_part(
+            "examples", DAY, 3,
+        ));
+        assert_eq!(result, Some(34));
     }
 }
