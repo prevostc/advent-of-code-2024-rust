@@ -30,3 +30,5 @@ dhat-heap.json
 data/timings.json
 
 flamegraph.svg
+
+*.log

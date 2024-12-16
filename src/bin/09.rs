@@ -75,6 +75,11 @@ fn parse_blocks(input: &str) -> Vec<Block> {
         } else {
             None
         };
+
+        if num == 0 {
+            continue;
+        }
+
         let b = Block {
             file_id,
             length: num,
@@ -130,57 +135,78 @@ pub fn part_two(input: &str) -> Option<u64> {
     // we want to move the files in order of decreasing file ID number
     // if there is no span of free space to the left of a file that is large enough to fit the file, the file does not move
 
-    let mut spaces_block_indices: Vec<usize> = Vec::with_capacity(1000);
-    for (i, b) in blocks.iter().enumerate() {
-        if b.file_id.is_none() {
-            spaces_block_indices.push(i);
-        }
-    }
+    let mut spaces_block_indices_by_size: Vec<Vec<usize>> =
+        (0..10).map(|_| Vec::with_capacity(500)).collect();
+
+    // store indices smaller last so we can pop from the end and don't need to shift that much
+    blocks
+        .iter()
+        .enumerate()
+        .rev()
+        .filter(|(_, b)| b.file_id.is_none())
+        .filter(|(_, b)| b.length > 0)
+        .for_each(|(i, b)| {
+            spaces_block_indices_by_size[b.length as usize].push(i);
+        });
 
     let mut right_block_idx = blocks.len() - 1;
     while right_block_idx > 0 {
-        let right_block = &blocks[right_block_idx];
+        let right_block = &blocks[right_block_idx].clone();
         if right_block.is_free() {
             right_block_idx -= 1;
             continue;
         }
 
-        // look for a free space block that can fit the file
-        let mut free_space_block_idx = None;
-        for (i, space_idx) in spaces_block_indices.iter().enumerate() {
-            if *space_idx > right_block_idx {
-                break;
-            }
-            let left_block = &blocks[*space_idx];
-            if left_block.length > right_block.length {
-                free_space_block_idx = Some(*space_idx);
-                for i in i..spaces_block_indices.len() {
-                    spaces_block_indices[i] += 1;
+        // look for the best free space block that can fit the file, only looking at the last of each size
+        let mut best_free_space_block_idx = usize::MAX;
+        for s in (right_block.length as usize)..spaces_block_indices_by_size.len() {
+            if let Some(&found_idx) = spaces_block_indices_by_size[s].last() {
+                if found_idx < right_block_idx && found_idx < best_free_space_block_idx {
+                    best_free_space_block_idx = found_idx;
                 }
-                break;
-            } else if left_block.length == right_block.length {
-                free_space_block_idx = Some(*space_idx);
-                spaces_block_indices.remove(i);
-                break;
             }
         }
 
-        if let Some(left_block_idx) = free_space_block_idx {
-            let left_block = &blocks[left_block_idx];
-            let (_, maybe_left_additional_space) = left_block.split(right_block.length);
-
-            if let Some(left_additional_space) = maybe_left_additional_space {
-                blocks.insert(left_block_idx, right_block.clone());
-                blocks[left_block_idx + 1] = left_additional_space;
-                right_block_idx += 1;
-            } else {
-                blocks[left_block_idx] = right_block.clone();
-            }
-
-            blocks[right_block_idx].file_id = None;
+        if best_free_space_block_idx == usize::MAX {
             right_block_idx -= 1;
+            continue;
         }
 
+        let left_block_idx = best_free_space_block_idx;
+        let left_block = &blocks[left_block_idx];
+        spaces_block_indices_by_size[left_block.length as usize].pop();
+
+        let (_, maybe_left_additional_space) = left_block.split(right_block.length);
+        if let Some(left_additional_space) = maybe_left_additional_space {
+            let new_idx = left_block_idx + 1;
+            blocks.insert(left_block_idx, right_block.clone());
+
+            // shift all the indices that are greater than the left block index
+            spaces_block_indices_by_size
+                .iter_mut()
+                .flat_map(|space_list| space_list.iter_mut())
+                .filter(|idx| **idx > left_block_idx)
+                .for_each(|idx| *idx += 1);
+
+            // add the new space to the list
+            let space_list =
+                &mut spaces_block_indices_by_size[left_additional_space.length as usize];
+            let mut insert_idx = space_list.len();
+            for i in (0..space_list.len()).rev() {
+                if space_list[i] > new_idx {
+                    break;
+                }
+                insert_idx = i;
+            }
+            space_list.insert(insert_idx, new_idx);
+
+            blocks[new_idx] = left_additional_space;
+            right_block_idx += 1;
+        } else {
+            blocks[left_block_idx] = right_block.clone();
+        }
+
+        blocks[right_block_idx].file_id = None;
         right_block_idx -= 1;
     }
 
@@ -213,5 +239,12 @@ mod tests {
             "examples", DAY, 2,
         ));
         assert_eq!(result, Some(2858));
+    }
+
+    #[test]
+    fn test_part_two_3() {
+        let input = "55341271410101";
+        let result = part_two(&input);
+        assert_eq!(result, Some(638));
     }
 }
