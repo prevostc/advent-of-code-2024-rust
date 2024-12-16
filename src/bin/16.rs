@@ -9,6 +9,8 @@ use mygrid::{
 advent_of_code::solution!(16);
 
 pub fn part_one(input: &str) -> Option<u64> {
+    return None;
+
     let (grid, start) = Grid::new_from_str_capture_start(input, &|c| c, &|c| c == 'S');
     let target_pos = grid
         .iter_item_and_position()
@@ -83,17 +85,20 @@ pub fn part_two(input: &str) -> Option<u64> {
         .next()
         .unwrap();
 
-    #[derive(Debug, PartialEq, Eq)]
-    struct State {
-        path: Vec<Point>,
+    use object_pool::{Pool, Reusable};
+
+    struct State<'a> {
+        path: Reusable<'a, Vec<Point>>,
         pos: Point,
         dir: Direction,
         cost: u64,
     }
 
-    let mut q = VecDeque::new();
-    let mut path = Vec::with_capacity(1024);
+    let path_pool = Pool::new(32, || Vec::with_capacity(1024));
+    let mut path = path_pool.pull(|| Vec::with_capacity(1024));
     path.push(start);
+
+    let mut q = VecDeque::new();
     q.push_back(State {
         path,
         pos: start,
@@ -155,7 +160,9 @@ pub fn part_two(input: &str) -> Option<u64> {
                 continue;
             }
 
-            let mut new_path = s.path.clone();
+            let mut new_path = path_pool.pull(|| Vec::with_capacity(1024));
+            new_path.clear();
+            new_path.extend(s.path.iter());
             new_path.push(pos);
             let new_state = State {
                 path: new_path,
