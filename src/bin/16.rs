@@ -103,8 +103,9 @@ pub fn part_two(input: &str) -> Option<u64> {
         cost: u64,
     }
 
-    let path_pool = Pool::new(32, || Vec::with_capacity(1024));
-    let mut path = path_pool.pull(|| Vec::with_capacity(1024));
+    const PATH_CAPACITY: usize = 256;
+    let path_pool = Pool::new(256, || Vec::with_capacity(PATH_CAPACITY));
+    let mut path = path_pool.pull(|| Vec::with_capacity(PATH_CAPACITY));
     path.push(start);
 
     let mut q = VecDeque::new();
@@ -189,7 +190,7 @@ pub fn part_two(input: &str) -> Option<u64> {
                     }
 
                     let (pos, dir, cost) = all_options[idx];
-                    let mut new_path = path_pool.pull(|| Vec::with_capacity(1024));
+                    let mut new_path = path_pool.pull(|| Vec::with_capacity(PATH_CAPACITY));
                     new_path.clear();
                     new_path.extend(s.path.iter());
                     new_path.push(pos);
