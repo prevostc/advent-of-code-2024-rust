@@ -103,7 +103,7 @@ pub fn part_two(input: &str) -> Option<u64> {
         cost: u64,
     }
 
-    const PATH_CAPACITY: usize = 256;
+    const PATH_CAPACITY: usize = 512;
     let path_pool = Pool::new(256, || Vec::with_capacity(PATH_CAPACITY));
     let mut path = path_pool.pull(|| Vec::with_capacity(PATH_CAPACITY));
     path.push(start);
@@ -191,8 +191,7 @@ pub fn part_two(input: &str) -> Option<u64> {
 
                     let (pos, dir, cost) = all_options[idx];
                     let mut new_path = path_pool.pull(|| Vec::with_capacity(PATH_CAPACITY));
-                    new_path.clear();
-                    new_path.extend(s.path.iter());
+                    new_path.clone_from(&s.path);
                     new_path.push(pos);
                     let new_state = State {
                         path: new_path,
