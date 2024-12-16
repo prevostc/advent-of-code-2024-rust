@@ -30,7 +30,7 @@ mod args {
         },
         Flame {
             day: Day,
-            release: bool,
+            debug: bool,
             dhat: bool,
         },
         All {
@@ -75,7 +75,7 @@ mod args {
             },
             Some("flame") => AppArguments::Flame {
                 day: args.free_from_str()?,
-                release: args.contains("--release"),
+                debug: args.contains("--debug"),
                 dhat: args.contains("--dhat"),
             },
             Some("solve") => AppArguments::Solve {
@@ -132,7 +132,7 @@ fn main() {
                 dhat,
                 submit,
             } => solve::handle(day, release, dhat, submit),
-            AppArguments::Flame { day, release, dhat } => flame::handle(day, release, dhat),
+            AppArguments::Flame { day, debug, dhat } => flame::handle(day, debug, dhat),
             #[cfg(feature = "today")]
             AppArguments::Today => {
                 match Day::today() {

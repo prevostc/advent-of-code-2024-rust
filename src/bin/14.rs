@@ -1,4 +1,4 @@
-use mygrid::{direction::Direction, grid::Grid, point::Point};
+use mygrid::{direction::Direction, heapless_grid::HeaplessGrid, point::Point};
 
 advent_of_code::solution!(14);
 
@@ -86,7 +86,7 @@ pub fn part_two(input: &str) -> Option<u32> {
         robots: parse_input(input),
     };
 
-    let base_dbg_grid = Grid::new(
+    let base_dbg_grid = HeaplessGrid::<char, { 103 * 101 }>::new(
         configuration.grid_size.column as usize,
         configuration.grid_size.line as usize,
         '.',

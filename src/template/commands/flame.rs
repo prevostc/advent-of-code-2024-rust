@@ -2,7 +2,7 @@ use std::process::{Command, Stdio};
 
 use crate::template::Day;
 
-pub fn handle(day: Day, release: bool, dhat: bool) {
+pub fn handle(day: Day, debug: bool, dhat: bool) {
     let mut cmd_args = vec![
         "flamegraph".to_string(),
         "--bin".to_string(),
@@ -16,11 +16,14 @@ pub fn handle(day: Day, release: bool, dhat: bool) {
             "--features".to_string(),
             "dhat-heap".to_string(),
         ]);
-    } else if release {
+    }
+
+    if !debug {
         cmd_args.push("--release".to_string());
     }
 
     cmd_args.push("--".to_string());
+    cmd_args.push("--time".to_string());
 
     let mut cmd = Command::new("cargo")
         .args(&cmd_args)

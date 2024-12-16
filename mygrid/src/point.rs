@@ -76,6 +76,19 @@ impl Point {
     }
 
     #[inline]
+    pub fn from_usize(value: usize, grid_width: usize) -> Self {
+        Point::new(
+            value as isize / grid_width as isize,
+            value as isize % grid_width as isize,
+        )
+    }
+
+    #[inline]
+    pub fn to_usize(&self, grid_width: usize) -> usize {
+        (self.line as usize) * grid_width + self.column as usize
+    }
+
+    #[inline]
     pub fn to_u128(&self) -> u128 {
         ((self.line as u128) << 64) | (self.column as u128)
     }
