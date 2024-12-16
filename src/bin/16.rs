@@ -9,8 +9,6 @@ use mygrid::{
 advent_of_code::solution!(16);
 
 pub fn part_one(input: &str) -> Option<u64> {
-    return None;
-
     let (grid, start) = Grid::new_from_str_capture_start(input, &|c| c, &|c| c == 'S');
     let target_pos = grid
         .iter_item_and_position()
