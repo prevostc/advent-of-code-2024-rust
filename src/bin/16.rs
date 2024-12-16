@@ -74,6 +74,17 @@ pub fn part_one(input: &str) -> Option<u64> {
     Some(min_cost)
 }
 
+#[inline]
+fn dir_to_index(dir: Direction) -> usize {
+    match dir {
+        RIGHT => 0,
+        DOWN => 1,
+        LEFT => 2,
+        UP => 3,
+        _ => unreachable!(),
+    }
+}
+
 pub fn part_two(input: &str) -> Option<u64> {
     let (grid, start) = Grid::new_from_str_capture_start(input, &|c| c, &|c| c == 'S');
     let target_pos = grid
@@ -108,15 +119,8 @@ pub fn part_two(input: &str) -> Option<u64> {
     let mut best_spots_grid = base_false_grid.clone();
     let mut best_target_cost = u64::MAX;
     let mut best_cost_grid = Grid::new(grid.width, grid.height, [u64::MAX; 4]);
-    let dir_to_index = |d: Direction| match d {
-        RIGHT => 0,
-        DOWN => 1,
-        LEFT => 2,
-        UP => 3,
-        _ => unreachable!(),
-    };
 
-    while let Some(s) = q.pop_front() {
+    while let Some(mut s) = q.pop_front() {
         if s.pos == target_pos {
             if best_target_cost < s.cost {
                 continue;
@@ -139,36 +143,65 @@ pub fn part_two(input: &str) -> Option<u64> {
 
         let right = s.dir.rotate_clockwise();
         let left = s.dir.rotate_counterclockwise();
-        for &(pos, dir, cost) in [
-            (s.pos + s.dir, s.dir, s.cost + 1),
-            (s.pos + left, left, s.cost + 1000 + 1),
-            (s.pos + right, right, s.cost + 1000 + 1),
-        ]
-        .iter()
-        {
+        let is_viable = |&(pos, dir, cost)| {
             if grid[pos] == '#' {
-                continue;
+                return false;
             }
             let best_cost_to_next_pos = best_cost_grid[pos][dir_to_index(dir)];
             if best_cost_to_next_pos < cost {
-                continue;
+                return false;
             }
-
             if cost > best_target_cost {
-                continue;
+                return false;
             }
+            true
+        };
 
-            let mut new_path = path_pool.pull(|| Vec::with_capacity(1024));
-            new_path.clear();
-            new_path.extend(s.path.iter());
-            new_path.push(pos);
-            let new_state = State {
-                path: new_path,
-                pos,
-                dir,
-                cost,
-            };
-            q.push_back(new_state);
+        let all_options = [
+            (s.pos + s.dir, s.dir, s.cost + 1),
+            (s.pos + left, left, s.cost + 1000 + 1),
+            (s.pos + right, right, s.cost + 1000 + 1),
+        ];
+
+        let viable_options = [
+            is_viable(&all_options[0]),
+            is_viable(&all_options[1]),
+            is_viable(&all_options[2]),
+        ];
+
+        // fast path when there is only one option to avoid copying the path
+        let viable_count = viable_options.iter().filter(|&&b| b).count();
+        match viable_count {
+            0 => continue,
+            1 => {
+                let idx = viable_options.iter().position(|&b| b).unwrap();
+                let (pos, dir, cost) = all_options[idx];
+                s.path.push(pos);
+                s.cost = cost;
+                s.pos = pos;
+                s.dir = dir;
+                q.push_back(s);
+            }
+            _ => {
+                for (idx, &is_viable) in viable_options.iter().enumerate() {
+                    if !is_viable {
+                        continue;
+                    }
+
+                    let (pos, dir, cost) = all_options[idx];
+                    let mut new_path = path_pool.pull(|| Vec::with_capacity(1024));
+                    new_path.clear();
+                    new_path.extend(s.path.iter());
+                    new_path.push(pos);
+                    let new_state = State {
+                        path: new_path,
+                        pos,
+                        dir,
+                        cost,
+                    };
+                    q.push_back(new_state);
+                }
+            }
         }
     }
 
