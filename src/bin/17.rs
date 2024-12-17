@@ -165,96 +165,98 @@ pub fn part_two(input: &str) -> Option<u64> {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_ex_1() {
-    //     let mut machine = Machine {
-    //         reg_a: 0,
-    //         reg_b: 0,
-    //         reg_c: 9,
-    //         ip: 0,
-    //         tape: vec![2, 6],
-    //         output: vec![],
-    //     };
-    //     machine.step();
-    //     assert_eq!(machine.reg_b, 1);
-    // }
+    #[test]
+    fn test_ex_1() {
+        let mut machine = Machine {
+            reg_a: 0,
+            reg_b: 0,
+            reg_c: 9,
+            ip: 0,
+            tape: vec![2, 6],
+            output: vec![],
+        };
+        machine.step();
+        assert_eq!(machine.reg_b, 1);
+    }
 
-    // #[test]
-    // fn test_ex_2() {
-    //     let mut machine = Machine {
-    //         reg_a: 10,
-    //         reg_b: 0,
-    //         reg_c: 0,
-    //         ip: 0,
-    //         tape: vec![5, 0, 5, 1, 5, 4],
-    //         output: vec![],
-    //     };
-    //     while machine.step() {}
-    //     assert_eq!(machine.output, vec![0, 1, 2]);
-    // }
+    #[test]
+    fn test_ex_2() {
+        let mut machine = Machine {
+            reg_a: 10,
+            reg_b: 0,
+            reg_c: 0,
+            ip: 0,
+            tape: vec![5, 0, 5, 1, 5, 4],
+            output: vec![],
+        };
+        while machine.step() {}
+        assert_eq!(machine.output, vec![0, 1, 2]);
+    }
 
-    // #[test]
-    // fn test_ex_3() {
-    //     let mut machine = Machine {
-    //         reg_a: 2024,
-    //         reg_b: 0,
-    //         reg_c: 0,
-    //         ip: 0,
-    //         tape: vec![0, 1, 5, 4, 3, 0],
-    //         output: vec![],
-    //     };
-    //     while machine.step() {}
-    //     assert_eq!(machine.output, vec![4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0]);
-    //     assert_eq!(machine.reg_a, 0);
-    // }
+    #[test]
+    fn test_ex_3() {
+        let mut machine = Machine {
+            reg_a: 2024,
+            reg_b: 0,
+            reg_c: 0,
+            ip: 0,
+            tape: vec![0, 1, 5, 4, 3, 0],
+            output: vec![],
+        };
+        while machine.step() {}
+        assert_eq!(machine.output, vec![4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0]);
+        assert_eq!(machine.reg_a, 0);
+    }
 
-    // #[test]
-    // fn test_ex_4() {
-    //     let mut machine = Machine {
-    //         reg_a: 0,
-    //         reg_b: 29,
-    //         reg_c: 0,
-    //         ip: 0,
-    //         tape: vec![1, 7],
-    //         output: vec![],
-    //     };
-    //     machine.step();
-    //     assert_eq!(machine.reg_b, 26);
-    // }
+    #[test]
+    fn test_ex_4() {
+        let mut machine = Machine {
+            reg_a: 0,
+            reg_b: 29,
+            reg_c: 0,
+            ip: 0,
+            tape: vec![1, 7],
+            output: vec![],
+        };
+        machine.step();
+        assert_eq!(machine.reg_b, 26);
+    }
 
-    // #[test]
-    // fn test_ex_5() {
-    //     let mut machine = Machine {
-    //         reg_a: 0,
-    //         reg_b: 2024,
-    //         reg_c: 43690,
-    //         ip: 0,
-    //         tape: vec![4, 0],
-    //         output: vec![],
-    //     };
-    //     machine.step();
-    //     assert_eq!(machine.reg_b, 44354);
-    // }
+    #[test]
+    fn test_ex_5() {
+        let mut machine = Machine {
+            reg_a: 0,
+            reg_b: 2024,
+            reg_c: 43690,
+            ip: 0,
+            tape: vec![4, 0],
+            output: vec![],
+        };
+        machine.step();
+        assert_eq!(machine.reg_b, 44354);
+    }
 
-    // #[test]
-    // fn test_ex_6() {
-    //     let mut machine = Machine {
-    //         reg_a: 117440,
-    //         reg_b: 0,
-    //         reg_c: 0,
-    //         ip: 0,
-    //         tape: vec![0, 3, 5, 4, 3, 0],
-    //         output: vec![],
-    //     };
-    //     while machine.step() {}
-    //     assert_eq!(machine.output, vec![0, 3, 5, 4, 3, 0]);
-    // }
+    #[test]
+    fn test_ex_6() {
+        let mut machine = Machine {
+            reg_a: 117440,
+            reg_b: 0,
+            reg_c: 0,
+            ip: 0,
+            tape: vec![0, 3, 5, 4, 3, 0],
+            output: vec![],
+        };
+        while machine.step() {}
+        assert_eq!(machine.output, vec![0, 3, 5, 4, 3, 0]);
+    }
 
-    // #[test]
-    // fn test_part_one() {
-    //     let result = part_one(&advent_of_code::template::read_file_part("examples", DAY, 1));
-    //     assert_eq!(result, Some("4,6,3,5,6,3,5,2,1,0".to_string()));
-    // }
+    #[test]
+    fn test_part_one() {
+        let result = part_one(&advent_of_code::template::read_file_part(
+            "examples", DAY, 1,
+        ));
+        assert_eq!(result, Some("4,6,3,5,6,3,5,2,1,0".to_string()));
+    }
 
     #[test]
     fn test_part_two() {
