@@ -49,6 +49,9 @@ fn dijkstra(grid: &Grid<char>, start: Point, end: Point) -> Grid<i64> {
 }
 
 fn solve<const CHEAT_MOVES: isize>(input: &str, min_gain: i64) -> Option<i64> {
+    assert!(CHEAT_MOVES > 1);
+    assert!(min_gain > 0);
+
     let (grid, start, end) = parse_input(input);
     let cost = dijkstra(&grid, start, end);
 
@@ -76,7 +79,6 @@ fn solve<const CHEAT_MOVES: isize>(input: &str, min_gain: i64) -> Option<i64> {
                 .map(|&(diff, moves)| (start_pos + diff, moves))
                 .filter(|&(pos, _)| cost.is_in_bounds(pos))
                 .filter(|&(pos, _)| cost[pos] != i64::MAX)
-                .filter(|&(pos, moves)| cost[pos] > start_cost + moves as i64)
                 .filter(|&(pos, moves)| cost[pos] - (start_cost + moves as i64) >= min_gain)
                 .count() as i64;
 
@@ -101,7 +103,7 @@ mod tests {
     #[test]
     fn test_part_one_0() {
         let input = advent_of_code::template::read_file("examples", DAY);
-        let result = solve::<2>(&input, 0);
+        let result = solve::<2>(&input, 1);
         assert_eq!(result, Some(44));
     }
 
