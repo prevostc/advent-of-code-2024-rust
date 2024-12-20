@@ -1,4 +1,8 @@
-use mygrid::{direction::ORTHOGONAL, grid::Grid, point::Point};
+use mygrid::{
+    direction::{Direction, ORTHOGONAL},
+    grid::Grid,
+    point::Point,
+};
 use rayon::iter::ParallelIterator;
 
 advent_of_code::solution!(20);
@@ -44,38 +48,32 @@ fn dijkstra(grid: &Grid<char>, start: Point, end: Point) -> Grid<i64> {
     cost
 }
 
-#[inline]
-fn diamond_iter<const DIAMOND_RADIUS: isize>(
-    start_pos: Point,
-) -> impl Iterator<Item = (Point, i64)> {
-    // this could be more efficient tbh
-    (0..(DIAMOND_RADIUS * 2 + 1))
-        .into_iter()
-        .flat_map(move |i| {
-            let line = start_pos.line - DIAMOND_RADIUS + i;
-            (0..(DIAMOND_RADIUS * 2 + 1))
-                .into_iter()
-                .map(move |j: isize| {
-                    let col = start_pos.column - DIAMOND_RADIUS + j;
-                    let pos = Point::new(line, col);
-                    let moves =
-                        (start_pos.line - pos.line).abs() + (start_pos.column - pos.column).abs();
-                    (pos, moves as i64)
-                })
-        })
-        .filter(|&(_, moves)| moves <= DIAMOND_RADIUS as i64)
-}
-
 fn solve<const CHEAT_MOVES: isize>(input: &str, min_gain: i64) -> Option<i64> {
     let (grid, start, end) = parse_input(input);
     let cost = dijkstra(&grid, start, end);
+
+    let diamond_diff = (0..(CHEAT_MOVES * 2 + 1))
+        .into_iter()
+        .flat_map(move |i| {
+            let line = -CHEAT_MOVES + i;
+            (0..(CHEAT_MOVES * 2 + 1)).into_iter().map(move |j: isize| {
+                let col = -CHEAT_MOVES + j;
+                let diff = Direction::new(line, col);
+                let moves = (diff.vertical).abs() + (diff.horizontal).abs();
+                (diff, moves as i64)
+            })
+        })
+        .filter(|&(_, moves)| moves <= CHEAT_MOVES as i64)
+        .collect::<Vec<_>>();
 
     let count = cost
         // makes p1 slightly slower, but p2 much faster
         .par_iter_item_and_position()
         .filter(|&(_, c)| *c != i64::MAX)
         .map(|(start_pos, &start_cost)| {
-            let count = diamond_iter::<CHEAT_MOVES>(start_pos)
+            let count = diamond_diff
+                .iter()
+                .map(|&(diff, moves)| (start_pos + diff, moves))
                 .filter(|&(pos, _)| cost.is_in_bounds(pos))
                 .filter(|&(pos, _)| cost[pos] != i64::MAX)
                 .filter(|&(pos, moves)| cost[pos] > start_cost + moves as i64)
