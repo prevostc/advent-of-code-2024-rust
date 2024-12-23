@@ -1,4 +1,4 @@
-use memoize::memoize;
+use bitvec::bitvec;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 advent_of_code::solution!(22);
@@ -54,70 +54,43 @@ type Seq = u32;
 type SeqDiff = i8;
 
 #[inline]
-fn diff_to_seq_part(diff: SeqDiff) -> Seq {
-    (diff as Seq & SEQ_MASK_1) as Seq
-}
-
-#[inline]
 fn push_seq(seq: Seq, diff: SeqDiff) -> Seq {
     // we are working mod 10 so + 10 is fine
-    ((seq << SEQ_PART_SIZE) | diff_to_seq_part(diff)) & SEQ_MASK_4
-}
-
-#[memoize]
-fn gen_all_seq() -> Vec<Seq> {
-    (-9..9)
-        .flat_map(|a| {
-            (-9..9).flat_map(move |b| {
-                (-9..9).flat_map(move |c| {
-                    (-9..9).map(move |d| {
-                        (diff_to_seq_part(a) << (SEQ_PART_SIZE * 3))
-                            | (diff_to_seq_part(b) << (SEQ_PART_SIZE * 2))
-                            | (diff_to_seq_part(c) << SEQ_PART_SIZE)
-                            | diff_to_seq_part(d)
-                    })
-                })
-            })
-        })
-        .collect()
+    ((seq << SEQ_PART_SIZE) | (diff as Seq & SEQ_MASK_1)) & SEQ_MASK_4
 }
 
 pub fn part_two(input: &str) -> Option<i32> {
     let seeds = parse_input(input).collect::<Vec<_>>();
-    let seeds_seq_map = seeds
-        .par_iter()
-        .map(|seed| {
-            let mut seq_map = vec![None; 1 << (SEQ_PART_SIZE * 4)];
-            let mut prev_price = 0;
-            let mut secret = *seed;
-            let mut seq = 0;
-            for _ in 0..2000 {
-                secret = next_secret(secret);
-                let new_price = (secret % 10) as i8;
-                seq = push_seq(seq, new_price - prev_price);
-                if seq_map[seq as usize] == None {
-                    seq_map[seq as usize] = Some(new_price as i8);
-                }
-                prev_price = new_price;
+
+    let mut seq_bananas = vec![0; 1 << (SEQ_PART_SIZE * 4)];
+
+    seeds.iter().for_each(|seed| {
+        let mut seen = bitvec![0; 1 << (SEQ_PART_SIZE * 4)];
+
+        let mut prev_price = 0;
+        let mut secret = *seed;
+        let mut seq = 0;
+
+        for i in 0..2000 {
+            secret = next_secret(secret);
+            let new_price = (secret % 10) as i8;
+            seq = push_seq(seq, new_price - prev_price);
+            prev_price = new_price;
+
+            if i < 4 {
+                continue;
             }
-            seq_map
-        })
-        .collect::<Vec<_>>();
+            if seen[seq as usize] {
+                continue;
+            }
 
-    let seq_to_test = gen_all_seq();
+            seen.set(seq as usize, true);
+            seq_bananas[seq as usize] += new_price as i32;
+        }
+    });
 
-    let max_bananas = seq_to_test
-        .par_iter()
-        .map(|&target_seq| {
-            let bananas = seeds_seq_map
-                .iter()
-                .map(|seq_map| seq_map[target_seq as usize].unwrap_or(0) as i32)
-                .sum();
-            bananas
-        })
-        .max();
-
-    Some(max_bananas.unwrap())
+    let max_bananas = seq_bananas.into_iter().max().unwrap();
+    Some(max_bananas)
 }
 
 #[cfg(test)]

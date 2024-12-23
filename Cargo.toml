@@ -21,6 +21,7 @@ test_lib = []
 
 [dependencies]
 bit-set = "0.8.0"
+bitvec = "1.0.1"
 
 # Template dependencies
 chrono = { version = "0.4.38", optional = true }
