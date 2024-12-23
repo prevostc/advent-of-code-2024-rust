@@ -36,24 +36,6 @@ fn parse_input<'a>(input: &'a str) -> impl Iterator<Item = Secret> + 'a {
         .map(|l| l.parse::<Secret>().unwrap())
 }
 
-#[memoize]
-fn gen_all_seq() -> Vec<u32> {
-    (-9..9)
-        .flat_map(|a| {
-            (-9..9).flat_map(move |b| {
-                (-9..9).flat_map(move |c| {
-                    (-9..9).map(move |d| {
-                        (diff_to_seq_part(a) << 24)
-                            | (diff_to_seq_part(b) << 16)
-                            | (diff_to_seq_part(c) << 8)
-                            | diff_to_seq_part(d)
-                    })
-                })
-            })
-        })
-        .collect()
-}
-
 pub fn part_one(input: &str) -> Option<u64> {
     let seeds = parse_input(input).collect::<Vec<_>>();
     let res = seeds
@@ -64,38 +46,61 @@ pub fn part_one(input: &str) -> Option<u64> {
     Some(res)
 }
 
+const SEQ_PART_SIZE: usize = 5;
+const SEQ_MASK_4: u32 = (1 << (SEQ_PART_SIZE * 4)) - 1;
+const SEQ_MASK_1: u32 = (1 << SEQ_PART_SIZE) - 1;
+
 type Seq = u32;
 type SeqDiff = i8;
 
 #[inline]
 fn diff_to_seq_part(diff: SeqDiff) -> Seq {
-    (diff as Seq) & 0xFF
+    (diff as Seq & SEQ_MASK_1) as Seq
 }
 
 #[inline]
-fn push_seq(seq: Seq, diff: SeqDiff) -> u32 {
+fn push_seq(seq: Seq, diff: SeqDiff) -> Seq {
     // we are working mod 10 so + 10 is fine
-    (seq << 8) | diff_to_seq_part(diff)
+    ((seq << SEQ_PART_SIZE) | diff_to_seq_part(diff)) & SEQ_MASK_4
+}
+
+#[memoize]
+fn gen_all_seq() -> Vec<Seq> {
+    (-9..9)
+        .flat_map(|a| {
+            (-9..9).flat_map(move |b| {
+                (-9..9).flat_map(move |c| {
+                    (-9..9).map(move |d| {
+                        (diff_to_seq_part(a) << (SEQ_PART_SIZE * 3))
+                            | (diff_to_seq_part(b) << (SEQ_PART_SIZE * 2))
+                            | (diff_to_seq_part(c) << SEQ_PART_SIZE)
+                            | diff_to_seq_part(d)
+                    })
+                })
+            })
+        })
+        .collect()
 }
 
 pub fn part_two(input: &str) -> Option<i32> {
     let seeds = parse_input(input).collect::<Vec<_>>();
-    let seeds_prices = seeds
+    let seeds_seq_map = seeds
         .par_iter()
         .map(|seed| {
-            let mut prices = [(0_i8, 0_u32); 2000];
-
+            let mut seq_map = vec![None; 1 << (SEQ_PART_SIZE * 4)];
             let mut prev_price = 0;
             let mut secret = *seed;
             let mut seq = 0;
-            for i in 0..2000 {
+            for _ in 0..2000 {
                 secret = next_secret(secret);
                 let new_price = (secret % 10) as i8;
                 seq = push_seq(seq, new_price - prev_price);
-                prices[i] = (new_price, seq);
+                if seq_map[seq as usize] == None {
+                    seq_map[seq as usize] = Some(new_price as i8);
+                }
                 prev_price = new_price;
             }
-            prices
+            seq_map
         })
         .collect::<Vec<_>>();
 
@@ -104,20 +109,10 @@ pub fn part_two(input: &str) -> Option<i32> {
     let max_bananas = seq_to_test
         .par_iter()
         .map(|&target_seq| {
-            let bananas = seeds_prices
+            let bananas = seeds_seq_map
                 .iter()
-                .map(|&seed_data| {
-                    let bananas = seed_data
-                        .iter()
-                        .skip(4)
-                        .find(|&(_, seq)| *seq == target_seq)
-                        .map(|(p, _)| *p)
-                        .unwrap_or(0);
-
-                    bananas as i32
-                })
+                .map(|seq_map| seq_map[target_seq as usize].unwrap_or(0) as i32)
                 .sum();
-
             bananas
         })
         .max();
